@@ -1,0 +1,130 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GuruController;
+use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\KelasController;
+use App\Http\Controllers\MataPelajaranController;
+use App\Http\Controllers\JadwalPelajaranController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\NilaiSiswaController;
+use App\Http\Controllers\KkmController;
+use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\ApprovalRequestController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\WaliKelasController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Profile Management
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Data Guru (temporarily accessible by all for testing)
+    Route::resource('guru', GuruController::class)->parameters(['guru' => 'user']);
+    
+    // Data Siswa (accessible by all aucthenticated users)
+    Route::resource('siswa', SiswaController::class);
+    
+    // Kelas Management (accessible by all authenticated users)
+    Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas']);
+    
+    // Mata Pelajaran (accessible by all authenticated users)
+    Route::resource('mata-pelajaran', MataPelajaranController::class);
+    
+    // Jadwal Pelajaran (accessible by all authenticated users)
+    Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
+    
+    // === SISTEM PENILAIAN === //
+    // Nilai Siswa (accessible by Guru and Kepala Tata Usaha)
+    Route::middleware('role:guru,kepala_tatausaha')->group(function () {
+        Route::get('/nilai-siswa', [NilaiSiswaController::class, 'index'])->name('nilai-siswa.index');
+        Route::get('/nilai-siswa/input', [NilaiSiswaController::class, 'create'])->name('nilai-siswa.create');
+        Route::post('/nilai-siswa', [NilaiSiswaController::class, 'store'])->name('nilai-siswa.store');
+        Route::get('/nilai-siswa/detail', [NilaiSiswaController::class, 'show'])->name('nilai-siswa.show');
+        
+        // Export routes
+        Route::get('/nilai-siswa/export/excel', [NilaiSiswaController::class, 'exportExcel'])->name('nilai-siswa.export.excel');
+        Route::get('/nilai-siswa/export/pdf', [NilaiSiswaController::class, 'exportPdf'])->name('nilai-siswa.export.pdf');
+    });
+    
+    // === SISTEM ABSENSI === //
+    // Absensi (accessible by Guru and Kepala Tata Usaha)
+    Route::middleware('role:guru,kepala_tatausaha')->group(function () {
+        Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
+        Route::post('/absensi', [AbsensiController::class, 'store'])->name('absensi.store');
+        Route::get('/absensi/rekap-siswa', [AbsensiController::class, 'rekapSiswa'])->name('absensi.rekap-siswa');
+        Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    });
+    
+    // Laporan Absensi (accessible by Kepala Tata Usaha and Tata Usaha)
+    Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
+        Route::get('/absensi/laporan', [AbsensiController::class, 'laporan'])->name('absensi.laporan');
+    });
+    
+    // KKM Management (accessible by Kepala Tata Usaha and Tata Usaha)
+    Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
+        Route::resource('kkm', KkmController::class);
+    });
+    
+    // Settings (accessible by Kepala Tata Usaha only)
+    Route::middleware('role:kepala_tatausaha')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    });
+    
+    // Wali Kelas Management (accessible by Kepala Tata Usaha and Tata Usaha)
+    Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
+        Route::get('/wali-kelas', [WaliKelasController::class, 'index'])->name('wali-kelas.index');
+        Route::get('/wali-kelas/{kelas}', [WaliKelasController::class, 'show'])->name('wali-kelas.show');
+        Route::post('/wali-kelas/{kelas}/assign', [WaliKelasController::class, 'assign'])->name('wali-kelas.assign');
+        Route::delete('/wali-kelas/{kelas}/remove', [WaliKelasController::class, 'remove'])->name('wali-kelas.remove');
+    });
+    
+    // === SISTEM PERSETUJUAN === //
+    // Approval Request Routes
+    Route::middleware('role:tata_usaha')->group(function () {
+        Route::get('/approval-requests', [ApprovalRequestController::class, 'index'])->name('approval-requests.index');
+        Route::patch('/approval-requests/{approval}/approve', [ApprovalRequestController::class, 'approve'])->name('approval-requests.approve');
+        Route::patch('/approval-requests/{approval}/reject', [ApprovalRequestController::class, 'reject'])->name('approval-requests.reject');
+    });
+    
+    // My Approval Requests (accessible by all authenticated users)
+    Route::get('/my-approval-requests', [ApprovalRequestController::class, 'myRequests'])->name('my-approval-requests.index');
+    Route::post('/approval-requests', [ApprovalRequestController::class, 'store'])->name('approval-requests.store');
+    
+    // === SISTEM NOTIFIKASI === //
+    // Notification Routes (accessible by all authenticated users)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('/notifications/delete-read', [NotificationController::class, 'deleteRead'])->name('notifications.delete-read');
+    
+    // API routes for notifications
+    Route::get('/api/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+    Route::get('/api/notifications/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
+    Route::get('/api/notifications/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
+    
+    // === AKSES KHUSUS MURID === //
+    // Routes untuk Murid (read-only access)
+    Route::middleware('role:murid')->group(function () {
+        Route::get('/murid/jadwal', [JadwalPelajaranController::class, 'index'])->name('murid.jadwal');
+        Route::get('/murid/nilai', [NilaiSiswaController::class, 'show'])->name('murid.nilai');
+        Route::get('/murid/absensi', [AbsensiController::class, 'show'])->name('murid.absensi');
+        Route::get('/murid/profil', [SiswaController::class, 'profile'])->name('murid.profil');
+    });
+});
+
+require __DIR__.'/auth.php';
