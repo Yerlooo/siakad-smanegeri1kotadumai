@@ -133,7 +133,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // API routes for notifications
     Route::get('/api/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
     Route::get('/api/notifications/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
-    Route::get('/api/notifications/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
     
     // === AKSES KHUSUS MURID === //
     // Routes untuk Murid (read-only access)

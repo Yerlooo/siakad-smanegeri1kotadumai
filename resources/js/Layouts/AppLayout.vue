@@ -455,14 +455,40 @@ const fetchNotifications = async () => {
     try {
         // Pastikan user sudah terauthentikasi sebelum fetch
         if (!page.props.auth.user) {
+            console.log('User not authenticated, skipping notifications fetch');
+            return;
+        }
+        
+        // Pastikan route helper tersedia
+        if (typeof route !== 'function') {
+            console.error('Route helper not available');
             return;
         }
         
         // Coba menggunakan axios jika tersedia, jika tidak gunakan fetch
         let response
         if (window.axios) {
-            response = await window.axios.get(route('notifications.recent'))
-            notifications.value = response.data.notifications || []
+            try {
+                response = await window.axios.get(route('notifications.recent'), {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                notifications.value = response.data.notifications || []
+            } catch (axiosError) {
+                console.error('Axios error fetching notifications:', axiosError);
+                
+                // Jika error 401/403, mungkin session expired
+                if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+                    console.log('Authentication error, redirecting to login');
+                    window.location.href = route('login');
+                    return;
+                }
+                
+                // Fallback ke fetch API
+                throw axiosError;
+            }
         } else {
             response = await fetch(route('notifications.recent'), {
                 method: 'GET',
@@ -475,15 +501,29 @@ const fetchNotifications = async () => {
                 credentials: 'same-origin' // Penting untuk session
             })
             
+            if (response.status === 401 || response.status === 403) {
+                console.log('Authentication error, redirecting to login');
+                window.location.href = route('login');
+                return;
+            }
+            
             if (response.ok) {
                 const data = await response.json()
                 notifications.value = data.notifications || []
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         }
     } catch (error) {
         console.error('Error fetching notifications:', error)
-        // Reset notifications on error
-        notifications.value = []
+        
+        // Jangan reset notifications jika ini adalah network error sementara
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.log('Network error, keeping existing notifications');
+        } else {
+            // Reset notifications on other errors
+            notifications.value = []
+        }
     }
 }
 

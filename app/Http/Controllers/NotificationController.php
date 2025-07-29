@@ -128,39 +128,55 @@ class NotificationController extends Controller
      */
     public function getRecent(Request $request)
     {
-        // Pastikan ini adalah request AJAX/API bukan Inertia request
-        if (!$request->wantsJson() && !$request->ajax()) {
-            abort(404);
-        }
-        
-        $user = Auth::user();
-        
-        if (!$user) {
+        try {
+            // Pastikan ini adalah request AJAX/API bukan Inertia request
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return response()->json(['error' => 'Invalid request type'], 400);
+            }
+            
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'error' => 'Unauthenticated',
+                    'notifications' => [],
+                    'unread_count' => 0
+                ], 401);
+            }
+            
+            $notifications = $user->notifications()
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($notification) {
+                    return [
+                        'id' => $notification->id,
+                        'type' => $notification->type,
+                        'data' => $notification->data,
+                        'read_at' => $notification->read_at,
+                        'created_at' => $notification->created_at->toISOString(),
+                        'time_ago' => $this->getTimeAgo($notification->created_at),
+                    ];
+                });
+
             return response()->json([
+                'success' => true,
+                'notifications' => $notifications,
+                'unread_count' => $user->unreadNotifications()->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error fetching notifications: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Internal server error',
                 'notifications' => [],
                 'unread_count' => 0
-            ]);
+            ], 500);
         }
-        
-        $notifications = $user->notifications()
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'type' => $notification->type,
-                    'data' => $notification->data,
-                    'read_at' => $notification->read_at,
-                    'created_at' => $notification->created_at->toISOString(),
-                    'time_ago' => $this->getTimeAgo($notification->created_at),
-                ];
-            });
-
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $user->unreadNotifications()->count()
-        ]);
     }
 
     /**
