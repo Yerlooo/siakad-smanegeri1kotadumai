@@ -95,16 +95,47 @@ class NilaiSiswaController extends Controller
                             $siswaLengkap++;
                         }
                     }
+                    
+                    // Tambahkan informasi status untuk setiap jenis nilai
+                    $statusJenisNilai = [];
+                    foreach ($jenisNilaiAktif as $jenisNilai) {
+                        $nilaiStatus = NilaiSiswa::where('mata_pelajaran_id', $mataPelajaranId)
+                            ->where('jenis_nilai_id', $jenisNilai->id)
+                            ->where('semester', $semester)
+                            ->where('tahun_ajaran', $tahunAjaran)
+                            ->whereIn('siswa_id', $siswaIds)
+                            ->get();
+                        
+                        $totalNilai = $nilaiStatus->count();
+                        $finalCount = $nilaiStatus->where('status', 'final')->count();
+                        $draftCount = $nilaiStatus->where('status', 'draft')->count();
+                        
+                        $statusJenisNilai[] = [
+                            'jenis_nilai_id' => $jenisNilai->id,
+                            'jenis_nilai_nama' => $jenisNilai->nama,
+                            'total_siswa' => $totalSiswa,
+                            'total_dinilai' => $totalNilai,
+                            'final_count' => $finalCount,
+                            'draft_count' => $draftCount,
+                            'belum_dinilai' => $totalSiswa - $totalNilai,
+                            'is_complete' => $totalNilai == $totalSiswa,
+                            'is_all_final' => $finalCount == $totalSiswa,
+                            'completion_percentage' => $totalSiswa > 0 ? round(($totalNilai / $totalSiswa) * 100) : 0,
+                            'final_percentage' => $totalSiswa > 0 ? round(($finalCount / $totalSiswa) * 100) : 0
+                        ];
+                    }
                 } else {
                     $progressPersen = 0;
                     $siswaLengkap = 0;
+                    $statusJenisNilai = [];
                 }
                 
                 $progressKelas[] = [
                     'kelas' => $jadwal->kelas,
                     'total_siswa' => $totalSiswa,
                     'nilai_selesai' => $siswaLengkap,
-                    'progress_persen' => $progressPersen
+                    'progress_persen' => $progressPersen,
+                    'status_jenis_nilai' => $statusJenisNilai
                 ];
             }
             
@@ -230,7 +261,17 @@ class NilaiSiswaController extends Controller
                 "nilai_siswa.{$index}.keterangan" => 'nullable|string|max:255'
             ];
             
-            $request->validate($rules);
+            $messages = [
+                "nilai_siswa.{$index}.nilai.required" => 'Nilai wajib diisi.',
+                "nilai_siswa.{$index}.nilai.numeric" => 'Nilai harus berupa angka.',
+                "nilai_siswa.{$index}.nilai.min" => 'Nilai tidak boleh kurang dari 0.',
+                "nilai_siswa.{$index}.nilai.max" => 'Nilai tidak boleh lebih dari 100.',
+                "nilai_siswa.{$index}.siswa_id.required" => 'Siswa wajib dipilih.',
+                "nilai_siswa.{$index}.siswa_id.exists" => 'Siswa tidak ditemukan.',
+                "nilai_siswa.{$index}.keterangan.max" => 'Keterangan maksimal 255 karakter.'
+            ];
+            
+            $request->validate($rules, $messages);
         }
 
         // Pastikan guru mengajar mata pelajaran ini

@@ -34,13 +34,21 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <h3 class="text-sm font-medium text-blue-800">Petunjuk Input Nilai</h3>
+                            <h3 class="text-sm font-medium text-blue-800">
+                                Petunjuk Input Nilai
+                                <span v-if="ungradedStudentsCount > 0" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    {{ ungradedStudentsCount }} siswa belum dinilai
+                                </span>
+                            </h3>
                             <div class="mt-2 text-sm text-blue-700">
                                 <p class="mb-2"><strong>Jenis Nilai:</strong> {{ jenisNilai.nama }} (Bobot: {{ jenisNilai.bobot }}%)</p>
                                 <ul class="list-disc pl-5 space-y-1">
                                     <li>Masukkan nilai dengan rentang 0-100</li>
                                     <li>Nilai di bawah KKM ({{ kkm?.kkm || 75 }}) akan ditandai merah</li>
                                     <li>Simpan sebagai <strong>Draft</strong> untuk sementara atau <strong>Final</strong> untuk menyelesaikan</li>
+                                    <li class="font-semibold text-yellow-700" v-if="ungradedStudentsCount > 0">
+                                        ⚠️ Semua siswa harus dinilai sebelum dapat menyimpan sebagai Final
+                                    </li>
                                     <li>Nilai yang sudah <strong>Final</strong> tidak dapat diubah tanpa persetujuan</li>
                                 </ul>
                             </div>
@@ -198,7 +206,7 @@
                                                ? 'border-red-300 bg-red-50 text-red-900' 
                                                : 'border-gray-300 bg-white text-gray-900'
                                    ]"
-                                   @input="updatePredikat(siswa.id)"
+                                   @input="validateAndUpdateNilai(siswa.id, $event)"
                                    :placeholder="nilaiExisting[siswa.id]?.nilai || '0'">
                             
                             <!-- Button untuk request approval jika nilai final -->
@@ -213,6 +221,13 @@
                             <span v-if="form.errors[`nilai_siswa.${siswa.id}.nilai`]" 
                                   class="text-red-500 text-xs">
                                 {{ form.errors[`nilai_siswa.${siswa.id}.nilai`] }}
+                            </span>
+                        </div>
+                        
+                        <!-- Peringatan nilai tidak valid -->
+                        <div v-if="nilaiErrors[siswa.id]" class="mt-1">
+                            <span class="text-red-500 text-xs">
+                                {{ nilaiErrors[siswa.id] }}
                             </span>
                         </div>
                         
@@ -301,7 +316,7 @@
                                                            ? 'border-red-300 bg-red-50 text-red-900' 
                                                            : 'border-gray-300 bg-white text-gray-900'
                                                ]"
-                                               @input="updatePredikat(siswa.id)"
+                                               @input="validateAndUpdateNilai(siswa.id, $event)"
                                                :placeholder="nilaiExisting[siswa.id]?.nilai || '0'">
                                         
                                         <!-- Button untuk request approval jika nilai final -->
@@ -312,6 +327,13 @@
                                                 title="Ajukan perubahan nilai">
                                             ✏️
                                         </button>
+                                    </div>
+                                    
+                                    <!-- Peringatan nilai tidak valid -->
+                                    <div v-if="nilaiErrors[siswa.id]" class="mt-1">
+                                        <span class="text-red-500 text-xs">
+                                            {{ nilaiErrors[siswa.id] }}
+                                        </span>
                                     </div>
                                     
                                     <!-- Status Final Indicator -->
@@ -362,10 +384,14 @@
 
                     <!-- Summary -->
                     <div class="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
                             <div class="bg-white rounded-lg p-3">
                                 <div class="text-xl sm:text-2xl font-bold text-blue-600">{{ summary.total }}</div>
                                 <div class="text-xs sm:text-sm text-gray-600">Total Siswa</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-3">
+                                <div class="text-xl sm:text-2xl font-bold text-indigo-600">{{ summary.sudahDinilai }}</div>
+                                <div class="text-xs sm:text-sm text-gray-600">Sudah Dinilai</div>
                             </div>
                             <div class="bg-white rounded-lg p-3">
                                 <div class="text-xl sm:text-2xl font-bold text-green-600">{{ summary.tuntas }}</div>
@@ -425,9 +451,14 @@
                                             canSaveAsFinal 
                                                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                                                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                        ]">
+                                        ]"
+                                        :title="!allStudentsGraded ? `${ungradedStudentsCount} siswa belum diinputkan nilainya` : 'Klik untuk menyimpan nilai sebagai final (tidak dapat diubah lagi)'"
+                                        @mouseenter="canSaveAsFinal && showInfo('💡 Tip', 'Nilai final tidak dapat diubah tanpa persetujuan admin', 3000)">
                                     <span v-if="form.processing">⏳ Menyimpan...</span>
-                                    <span v-else>✅ Simpan Final</span>
+                                    <span v-else-if="!allStudentsGraded">
+                                        ✅ Simpan Final ({{ ungradedStudentsCount }} siswa belum dinilai)
+                                    </span>
+                                    <span v-else>🔒 Simpan Final</span>
                                 </button>
                             </div>
                         </div>
@@ -435,6 +466,9 @@
                 </form>
             </div>
         </div>
+
+        <!-- Notification Container -->
+        <NotificationContainer />
 
         <!-- Approval Request Modal -->
         <Modal :show="showApprovalModal" @close="closeApprovalModal">
@@ -493,6 +527,26 @@
                 </div>
             </div>
         </Modal>
+
+        <!-- Confirm Modal -->
+        <ConfirmModal
+            :show="showConfirmModal"
+            :title="confirmModalProps.title"
+            :message="confirmModalProps.message"
+            :confirm-text="confirmModalProps.confirmText"
+            :cancel-text="confirmModalProps.cancelText"
+            :type="confirmModalProps.type"
+            @close="showConfirmModal = false"
+            @confirm="confirmAction && confirmAction()"
+        />
+
+        <!-- Final Confirm Modal -->
+        <FinalConfirmModal
+            :show="showFinalConfirmModal"
+            :summary="summary"
+            @close="showFinalConfirmModal = false"
+            @confirm="confirmFinalSubmission"
+        />
     </AppLayout>
 </template>
 
@@ -501,6 +555,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useForm, Link } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import ConfirmModal from '@/Components/ConfirmModal.vue'
+import FinalConfirmModal from '@/Components/FinalConfirmModal.vue'
+import NotificationContainer from '@/Components/NotificationContainer.vue'
+import { useNotification } from '@/composables/useNotification'
+
+const { showSuccess, showError, showWarning, showInfo } = useNotification()
 
 const props = defineProps({
     mataPelajaran: Object,
@@ -518,6 +578,18 @@ const bulkValue = ref('')
 // Approval Modal State
 const showApprovalModal = ref(false)
 const selectedSiswaForApproval = ref(null)
+
+// Confirm Modal State
+const showConfirmModal = ref(false)
+const showFinalConfirmModal = ref(false)
+const confirmAction = ref(null)
+const confirmModalProps = ref({
+    title: 'Konfirmasi',
+    message: 'Apakah Anda yakin?',
+    confirmText: 'Ya',
+    cancelText: 'Batal',
+    type: 'primary'
+})
 
 // Approval Form
 const approvalForm = useForm({
@@ -562,6 +634,30 @@ const form = useForm({
     status: 'final',
     nilai_siswa: initializeNilaiSiswa()
 })
+
+// Data untuk error validasi nilai
+const nilaiErrors = ref({})
+
+// Method untuk validasi dan update nilai
+const validateAndUpdateNilai = (siswaId, event) => {
+    const nilai = parseFloat(event.target.value)
+    
+    // Clear previous error
+    delete nilaiErrors.value[siswaId]
+    
+    // Validasi rentang nilai
+    if (event.target.value !== '' && (isNaN(nilai) || nilai < 0 || nilai > 100)) {
+        nilaiErrors.value[siswaId] = 'Nilai harus dalam rentang 0-100'
+        // Tidak update nilai jika tidak valid
+        return
+    }
+    
+    // Update nilai jika valid
+    form.nilai_siswa[siswaId].nilai = event.target.value
+    
+    // Update predikat
+    updatePredikat(siswaId)
+}
 
 // If initial data is empty, reinitialize on mount
 onMounted(() => {
@@ -608,20 +704,42 @@ const filteredSiswa = computed(() => {
 })
 
 const summary = computed(() => {
+    const total = props.kelas?.siswa?.length || 0
+    
     const nilaiList = Object.values(form.nilai_siswa)
         .map(item => parseFloat(item?.nilai) || 0)
         .filter(nilai => nilai > 0)
     
-    const total = props.kelas?.siswa?.length || 0
+    const sudahDinilai = nilaiList.length
     const tuntas = nilaiList.filter(nilai => nilai >= (props.kkm?.kkm || 75)).length
     const belumTuntas = nilaiList.filter(nilai => nilai > 0 && nilai < (props.kkm?.kkm || 75)).length
     const rataRata = nilaiList.length > 0 ? nilaiList.reduce((a, b) => a + b, 0) / nilaiList.length : 0
 
-    return { total, tuntas, belumTuntas, rataRata }
+    return { total, sudahDinilai, tuntas, belumTuntas, rataRata }
 })
 
 const isFormValid = computed(() => {
     return Object.values(form.nilai_siswa).some(item => item.nilai !== '' && item.nilai > 0)
+})
+
+// Check if all students have been graded (for final submission)
+const allStudentsGraded = computed(() => {
+    if (!props.kelas?.siswa || !Array.isArray(props.kelas.siswa)) return false
+    
+    return props.kelas.siswa.every(siswa => {
+        const nilai = form.nilai_siswa[siswa.id]?.nilai
+        return nilai !== '' && nilai !== null && nilai !== undefined && parseFloat(nilai) >= 0
+    })
+})
+
+// Count students that haven't been graded yet
+const ungradedStudentsCount = computed(() => {
+    if (!props.kelas?.siswa || !Array.isArray(props.kelas.siswa)) return 0
+    
+    return props.kelas.siswa.filter(siswa => {
+        const nilai = form.nilai_siswa[siswa.id]?.nilai
+        return nilai === '' || nilai === null || nilai === undefined
+    }).length
 })
 
 // Check if any nilai is already final (untuk disable form)
@@ -631,25 +749,37 @@ const hasAnyFinalNilai = computed(() => {
 
 // Check if form can be saved as draft
 const canSaveAsDraft = computed(() => {
-    return !hasAnyFinalNilai.value
+    return !hasAnyFinalNilai.value && isFormValid.value
 })
 
 // Check if form can be saved as final
 const canSaveAsFinal = computed(() => {
-    return !hasAnyFinalNilai.value && isFormValid.value
+    return !hasAnyFinalNilai.value && allStudentsGraded.value
 })
 
 const applyBulkValue = () => {
     if (hasAnyFinalNilai.value) {
-        alert('Tidak dapat menggunakan bulk value! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
+        showWarning(
+            'Tidak Dapat Menggunakan Bulk Value!', 
+            'Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.'
+        )
         return
     }
     
-    if (bulkValue.value >= 0 && bulkValue.value <= 100) {
-        Object.keys(form.nilai_siswa).forEach(siswaId => {
-            form.nilai_siswa[siswaId].nilai = bulkValue.value
-        })
+    const nilai = parseFloat(bulkValue.value)
+    
+    if (bulkValue.value === '' || isNaN(nilai) || nilai < 0 || nilai > 100) {
+        showError('Nilai Tidak Valid!', 'Nilai bulk harus dalam rentang 0-100!')
+        return
     }
+    
+    Object.keys(form.nilai_siswa).forEach(siswaId => {
+        form.nilai_siswa[siswaId].nilai = bulkValue.value
+        // Clear any previous errors
+        delete nilaiErrors.value[siswaId]
+    })
+    
+    showSuccess('Bulk Value Berhasil Diterapkan!', `Nilai ${bulkValue.value} telah diterapkan ke semua siswa.`)
 }
 
 const getPredikat = (nilai) => {
@@ -676,16 +806,33 @@ const updatePredikat = (siswaId) => {
 
 const resetForm = () => {
     if (hasAnyFinalNilai.value) {
-        alert('Tidak dapat mereset nilai! Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.')
+        showWarning(
+            'Tidak Dapat Mereset Nilai!', 
+            'Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.'
+        )
         return
     }
     
-    if (confirm('Yakin ingin mereset semua nilai?')) {
+    // Show confirmation modal untuk reset
+    confirmAction.value = () => {
         Object.keys(form.nilai_siswa).forEach(siswaId => {
             form.nilai_siswa[siswaId].nilai = ''
             form.nilai_siswa[siswaId].keterangan = ''
         })
+        showSuccess('Reset Berhasil!', 'Semua nilai telah direset.')
+        showConfirmModal.value = false
     }
+    
+    // Set reset modal properties
+    confirmModalProps.value = {
+        title: 'Konfirmasi Reset Nilai',
+        message: 'Apakah Anda yakin ingin mereset semua nilai? Tindakan ini tidak dapat dibatalkan.',
+        confirmText: 'Ya, Reset',
+        cancelText: 'Batal',
+        type: 'danger'
+    }
+    
+    showConfirmModal.value = true
 }
 
 // Check if nilai is final (cannot be edited)
@@ -715,18 +862,27 @@ const submitApprovalRequest = () => {
     approvalForm.post(route('approval-requests.store'), {
         onSuccess: () => {
             closeApprovalModal()
-            // Show success message
-            alert('Permintaan perubahan nilai berhasil diajukan! Tunggu persetujuan dari Tata Usaha.')
+            showSuccess(
+                'Permintaan Berhasil Diajukan!', 
+                'Permintaan perubahan nilai telah diajukan. Tunggu persetujuan dari Tata Usaha.'
+            )
         },
         onError: (errors) => {
             console.error('Error submitting approval request:', errors)
+            showError(
+                'Gagal Mengajukan Permintaan!', 
+                'Terjadi kesalahan saat mengajukan permintaan. Silakan coba lagi.'
+            )
         }
     })
 }
 
 const submitAsDraft = () => {
     if (hasAnyFinalNilai.value) {
-        alert('Tidak dapat menyimpan sebagai DRAFT! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
+        showWarning(
+            'Tidak Dapat Menyimpan Draft!', 
+            'Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.'
+        )
         return
     }
     
@@ -736,39 +892,88 @@ const submitAsDraft = () => {
 
 const submitAsFinal = () => {
     if (hasAnyFinalNilai.value) {
-        alert('Tidak dapat menyimpan sebagai FINAL! Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.')
+        showWarning(
+            'Tidak Dapat Menyimpan Final!', 
+            'Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.'
+        )
         return
     }
     
+    if (!allStudentsGraded.value) {
+        showError(
+            'Tidak Dapat Menyimpan Final!', 
+            `${ungradedStudentsCount.value} siswa belum diinputkan nilainya. Semua siswa harus dinilai sebelum dapat disimpan sebagai final.`
+        )
+        return
+    }
+    
+    // Show final confirmation modal
+    showFinalConfirmModal.value = true
+}
+
+const confirmFinalSubmission = () => {
     form.status = 'final'
     submitNilai()
+    showFinalConfirmModal.value = false
 }
 
 const submitNilai = () => {
     // Jika ada nilai final, tidak boleh submit sama sekali
     if (hasAnyFinalNilai.value) {
-        alert('Tidak dapat menyimpan! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
+        showError(
+            'Tidak Dapat Menyimpan!', 
+            'Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.'
+        )
+        return
+    }
+    
+    // Cek apakah ada error validasi nilai
+    if (Object.keys(nilaiErrors.value).length > 0) {
+        showError(
+            'Nilai Tidak Valid!', 
+            'Terdapat nilai yang tidak valid! Pastikan semua nilai dalam rentang 0-100.'
+        )
         return
     }
     
     // Filter siswa yang akan disimpan
     const nilaiSiswaToSave = {}
+    let hasInvalidValue = false
     
     Object.keys(form.nilai_siswa).forEach(siswaId => {
         const item = form.nilai_siswa[siswaId]
         const hasValue = item.nilai !== '' && item.nilai !== null && item.nilai !== undefined
         
         if (hasValue) {
+            const nilai = parseFloat(item.nilai)
+            
+            // Double check validasi nilai
+            if (isNaN(nilai) || nilai < 0 || nilai > 100) {
+                hasInvalidValue = true
+                return
+            }
+            
             nilaiSiswaToSave[siswaId] = {
                 siswa_id: parseInt(siswaId),
-                nilai: parseFloat(item.nilai),
+                nilai: nilai,
                 keterangan: item.keterangan || ''
             }
         }
     })
 
+    if (hasInvalidValue) {
+        showError(
+            'Nilai Tidak Valid!', 
+            'Terdapat nilai yang tidak valid! Nilai harus dalam rentang 0-100.'
+        )
+        return
+    }
+
     if (Object.keys(nilaiSiswaToSave).length === 0) {
-        alert('Minimal input 1 nilai siswa!')
+        showWarning(
+            'Input Nilai Kosong!', 
+            'Minimal input 1 nilai siswa sebelum menyimpan.'
+        )
         return
     }
 
@@ -788,9 +993,18 @@ const submitNilai = () => {
         .post(route('nilai-siswa.store'), {
             onSuccess: () => {
                 console.log('Nilai berhasil disimpan')
+                const statusText = form.status === 'final' ? 'Final' : 'Draft'
+                showSuccess(
+                    `Nilai ${statusText} Berhasil Disimpan!`, 
+                    `${Object.keys(nilaiSiswaToSave).length} nilai siswa telah disimpan sebagai ${statusText.toLowerCase()}.`
+                )
             },
             onError: (errors) => {
                 console.error('Error:', errors)
+                showError(
+                    'Gagal Menyimpan Nilai!', 
+                    'Terjadi kesalahan saat menyimpan nilai. Silakan periksa data dan coba lagi.'
+                )
             }
         })
 }

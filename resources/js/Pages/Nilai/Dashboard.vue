@@ -138,9 +138,16 @@
                                     <div class="flex space-x-1 sm:space-x-2 mb-3">
                                         <button v-for="jenis in jenisNilai.slice(0, 3)" :key="jenis.id"
                                                 @click="inputNilai(progress.mata_pelajaran.id, kelas.kelas.id, jenis.id)"
-                                                :title="`Input ${jenis.nama} (${jenis.bobot}%)`"
-                                                class="flex-1 text-xs px-1 sm:px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors text-center">
+                                                :title="getStatusTooltip(kelas, jenis.id)"
+                                                :class="getButtonClass(kelas, jenis.id)"
+                                                class="flex-1 text-xs px-1 sm:px-2 py-1 rounded transition-colors text-center relative">
                                             {{ getJenisNilaiIcon(jenis.nama) }} {{ jenis.nama.split(' ')[0] }}
+                                            <!-- Status Indicator -->
+                                            <span v-if="getStatusIndicator(kelas, jenis.id)" 
+                                                  :class="getStatusIndicator(kelas, jenis.id).class"
+                                                  class="absolute -top-1 -right-1 w-4 h-4 rounded-full text-xs flex items-center justify-center">
+                                                {{ getStatusIndicator(kelas, jenis.id).icon }}
+                                            </span>
                                         </button>
                                     </div>
                                     
@@ -194,7 +201,15 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div v-for="jenis in jenisNilai" :key="jenis.id"
                                          @click="selectJenisNilai(jenis.id)"
-                                         class="group p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 transform hover:scale-105">
+                                         :class="getModalJenisClass(jenis.id)"
+                                         class="group p-4 border-2 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 transform hover:scale-105 relative">
+                                        <!-- Status Badge -->
+                                        <div v-if="getModalStatusBadge(jenis.id)" 
+                                             :class="getModalStatusBadge(jenis.id).class"
+                                             class="absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-medium">
+                                            {{ getModalStatusBadge(jenis.id).text }}
+                                        </div>
+                                        
                                         <div class="flex items-start justify-between">
                                             <div class="flex-1">
                                                 <div class="flex items-center mb-2">
@@ -217,12 +232,33 @@
                                                         <span class="font-semibold text-blue-600">{{ jenis.bobot }}%</span>
                                                     </div>
                                                     
+                                                    <!-- Progress Status untuk jenis nilai ini -->
+                                                    <div v-if="getModalStatusDetail(jenis.id)" class="space-y-1">
+                                                        <div class="flex items-center justify-between">
+                                                            <span class="text-xs text-gray-500">Status:</span>
+                                                            <span :class="getModalStatusDetail(jenis.id).statusClass"
+                                                                  class="px-2 py-1 rounded-full text-xs font-medium">
+                                                                {{ getModalStatusDetail(jenis.id).statusText }}
+                                                            </span>
+                                                        </div>
+                                                        <div class="text-xs text-gray-600">
+                                                            Final: {{ getModalStatusDetail(jenis.id).final_count || 0 }} | 
+                                                            Draft: {{ getModalStatusDetail(jenis.id).draft_count || 0 }} | 
+                                                            Belum: {{ getModalStatusDetail(jenis.id).belum_dinilai || 0 }}
+                                                        </div>
+                                                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                                            <div :class="getModalStatusDetail(jenis.id).progressClass"
+                                                                 class="h-1.5 rounded-full transition-all duration-300"
+                                                                 :style="{ width: getModalStatusDetail(jenis.id).progress + '%' }"></div>
+                                                        </div>
+                                                    </div>
+                                                    
                                                     <div v-if="jenis.deskripsi" class="text-xs text-gray-500 italic">
                                                         {{ jenis.deskripsi }}
                                                     </div>
                                                     
                                                     <div class="flex items-center justify-between">
-                                                        <span class="text-xs text-gray-500">Status:</span>
+                                                        <span class="text-xs text-gray-500">Jenis:</span>
                                                         <span :class="[
                                                             'px-2 py-1 rounded-full text-xs font-medium',
                                                             jenis.status ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
@@ -239,18 +275,6 @@
                                                         <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"/>
                                                     </svg>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Progress indicator jika ada data -->
-                                        <div v-if="getJenisNilaiProgress(jenis.id)" class="mt-3 pt-3 border-t border-gray-200">
-                                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                                <span>Progress saat ini</span>
-                                                <span>{{ getJenisNilaiProgress(jenis.id) }}%</span>
-                                            </div>
-                                            <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                                <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                                                     :style="{ width: getJenisNilaiProgress(jenis.id) + '%' }"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -337,6 +361,158 @@ const getJenisNilaiProgress = (jenisNilaiId) => {
     // This would typically come from the backend data
     // For now, return null to hide progress bar
     return null
+}
+
+const getStatusIndicator = (kelas, jenisNilaiId) => {
+    if (!kelas.status_jenis_nilai) return null
+    
+    const status = kelas.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) return null
+    
+    if (status.is_all_final) {
+        return { icon: '✓', class: 'bg-green-500 text-white' }
+    } else if (status.total_dinilai > 0) {
+        return { icon: '~', class: 'bg-yellow-500 text-white' }
+    }
+    
+    return null
+}
+
+const getButtonClass = (kelas, jenisNilaiId) => {
+    if (!kelas.status_jenis_nilai) {
+        return 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+    }
+    
+    const status = kelas.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) {
+        return 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+    }
+    
+    if (status.is_all_final) {
+        return 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200'
+    } else if (status.total_dinilai > 0) {
+        return 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200'
+    } else {
+        return 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+    }
+}
+
+const getStatusTooltip = (kelas, jenisNilaiId) => {
+    if (!kelas.status_jenis_nilai) {
+        const jenis = props.jenisNilai.find(j => j.id === jenisNilaiId)
+        return `Input ${jenis?.nama || 'Nilai'}`
+    }
+    
+    const status = kelas.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) {
+        const jenis = props.jenisNilai.find(j => j.id === jenisNilaiId)
+        return `Input ${jenis?.nama || 'Nilai'}`
+    }
+    
+    if (status.is_all_final) {
+        return `${status.jenis_nilai_nama}: Semua Final (${status.final_count}/${status.total_siswa})`
+    } else if (status.total_dinilai > 0) {
+        return `${status.jenis_nilai_nama}: ${status.final_count} Final, ${status.draft_count} Draft, ${status.belum_dinilai} Belum`
+    } else {
+        return `${status.jenis_nilai_nama}: Belum ada nilai (${status.belum_dinilai}/${status.total_siswa})`
+    }
+}
+
+// Methods untuk modal
+const getModalJenisClass = (jenisNilaiId) => {
+    if (!selectedKelas.value) {
+        return 'border-gray-200'
+    }
+    
+    const kelasDetail = getSelectedKelasDetail()
+    if (!kelasDetail || !kelasDetail.status_jenis_nilai) {
+        return 'border-gray-200'
+    }
+    
+    const status = kelasDetail.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) {
+        return 'border-gray-200'
+    }
+    
+    if (status.is_all_final) {
+        return 'border-green-300 bg-green-50'
+    } else if (status.total_dinilai > 0) {
+        return 'border-yellow-300 bg-yellow-50'
+    } else {
+        return 'border-gray-200'
+    }
+}
+
+const getModalStatusBadge = (jenisNilaiId) => {
+    if (!selectedKelas.value) return null
+    
+    const kelasDetail = getSelectedKelasDetail()
+    if (!kelasDetail || !kelasDetail.status_jenis_nilai) return null
+    
+    const status = kelasDetail.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) return null
+    
+    if (status.is_all_final) {
+        return { 
+            text: '✓ Selesai', 
+            class: 'bg-green-500 text-white' 
+        }
+    } else if (status.total_dinilai > 0) {
+        return { 
+            text: '⚠ Sebagian', 
+            class: 'bg-yellow-500 text-white' 
+        }
+    } else {
+        return { 
+            text: '○ Belum', 
+            class: 'bg-gray-400 text-white' 
+        }
+    }
+}
+
+const getModalStatusDetail = (jenisNilaiId) => {
+    if (!selectedKelas.value) return null
+    
+    const kelasDetail = getSelectedKelasDetail()
+    if (!kelasDetail || !kelasDetail.status_jenis_nilai) return null
+    
+    const status = kelasDetail.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) return null
+    
+    const progress = status.total_siswa > 0 ? (status.total_dinilai / status.total_siswa) * 100 : 0
+    
+    let statusText, statusClass, progressClass
+    
+    if (status.is_all_final) {
+        statusText = 'Semua Final'
+        statusClass = 'bg-green-100 text-green-800'
+        progressClass = 'bg-green-500'
+    } else if (status.total_dinilai > 0) {
+        statusText = 'Sebagian Dinilai'
+        statusClass = 'bg-yellow-100 text-yellow-800'
+        progressClass = 'bg-yellow-500'
+    } else {
+        statusText = 'Belum Dinilai'
+        statusClass = 'bg-gray-100 text-gray-800'
+        progressClass = 'bg-gray-400'
+    }
+    
+    return {
+        ...status,
+        progress: Math.round(progress),
+        statusText,
+        statusClass,
+        progressClass
+    }
+}
+
+const getSelectedKelasDetail = () => {
+    if (!selectedMataPelajaran.value || !selectedKelas.value) return null
+    
+    const mataPelajaran = props.progressNilai.find(p => p.mata_pelajaran.id === selectedMataPelajaran.value)
+    if (!mataPelajaran) return null
+    
+    return mataPelajaran.kelas_detail.find(k => k.kelas.id === selectedKelas.value)
 }
 
 const inputNilai = (mataPelajaranId, kelasId, jenisNilaiId) => {
