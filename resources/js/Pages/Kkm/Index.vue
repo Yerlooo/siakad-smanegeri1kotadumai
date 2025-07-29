@@ -48,7 +48,7 @@
         <!-- Filter Section -->
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
           <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                   Filter Mata Pelajaran
@@ -60,6 +60,21 @@
                   <option value="">Semua Mata Pelajaran</option>
                   <option v-for="mapel in mataPelajaranList" :key="mapel.id" :value="mapel.id">
                     {{ mapel.nama_mapel }}
+                  </option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Filter Kelas
+                </label>
+                <select
+                  v-model="filters.kelas_id"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                  <option value="">Semua Kelas</option>
+                  <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
+                    {{ kelas.nama_kelas }}
                   </option>
                 </select>
               </div>
@@ -117,6 +132,9 @@
                     Mata Pelajaran
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kelas
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nilai KKM
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -129,7 +147,7 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="kkmList.data.length === 0">
-                  <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                  <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                     Belum ada data KKM
                   </td>
                 </tr>
@@ -152,6 +170,11 @@
                     </div>
                     <div class="text-sm text-gray-500">
                       {{ kkm.mata_pelajaran.kode_mapel }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ kkm.kelas?.nama_kelas || 'N/A' }}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
@@ -283,6 +306,24 @@
                     </div>
 
                     <div>
+                      <label for="kelas_id" class="block text-sm font-medium text-gray-700">
+                        Kelas <span class="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="kelas_id"
+                        v-model="form.kelas_id"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        required
+                      >
+                        <option value="">Pilih Kelas</option>
+                        <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
+                          {{ kelas.nama_kelas }}
+                        </option>
+                      </select>
+                      <span v-if="errors.kelas_id" class="text-red-500 text-sm">{{ errors.kelas_id }}</span>
+                    </div>
+
+                    <div>
                       <label for="kkm" class="block text-sm font-medium text-gray-700">
                         Nilai KKM <span class="text-red-500">*</span>
                       </label>
@@ -299,7 +340,7 @@
                       />
                       <span v-if="errors.kkm" class="text-red-500 text-sm">{{ errors.kkm }}</span>
                       <p class="mt-1 text-sm text-gray-500">
-                        Nilai KKM harus antara 0 sampai 100 dan akan diterapkan untuk seluruh kelas
+                        Nilai KKM harus antara 0 sampai 100 untuk kelas yang dipilih
                       </p>
                     </div>
                   </div>
@@ -396,6 +437,9 @@
                             Mata Pelajaran
                           </th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Kelas
+                          </th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Nilai KKM
                           </th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -405,7 +449,7 @@
                       </thead>
                       <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-if="bulkForm.kkm_data.length === 0">
-                          <td colspan="3" class="px-6 py-4 text-center text-gray-500">
+                          <td colspan="4" class="px-6 py-4 text-center text-gray-500">
                             Klik "Generate Template" untuk membuat template bulk input
                           </td>
                         </tr>
@@ -419,6 +463,18 @@
                               <option value="">Pilih Mata Pelajaran</option>
                               <option v-for="mapel in mataPelajaranList" :key="mapel.id" :value="mapel.id">
                                 {{ mapel.nama_mapel }}
+                              </option>
+                            </select>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <select
+                              v-model="item.kelas_id"
+                              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                              required
+                            >
+                              <option value="">Pilih Kelas</option>
+                              <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
+                                {{ kelas.nama_kelas }}
                               </option>
                             </select>
                           </td>
@@ -659,7 +715,7 @@ const submitForm = () => {
 
 const deleteKkm = (kkm) => {
   confirmModalData.title = 'Konfirmasi Hapus'
-  confirmModalData.message = `Apakah Anda yakin ingin menghapus KKM untuk mata pelajaran "${kkm.mata_pelajaran.nama_mapel}"? KKM ini berlaku untuk seluruh kelas.`
+  confirmModalData.message = `Apakah Anda yakin ingin menghapus KKM untuk mata pelajaran "${kkm.mata_pelajaran.nama_mapel}" kelas "${kkm.kelas?.nama_kelas || 'N/A'}"?`
   confirmModalData.confirmText = 'Hapus'
   confirmModalData.confirmColor = 'red'
   confirmModalData.onConfirm = () => {
@@ -681,10 +737,14 @@ const deleteKkm = (kkm) => {
 const generateBulkTemplate = () => {
   bulkForm.kkm_data = []
   
+  // Generate kombinasi mata pelajaran dan kelas
   props.mataPelajaranList.forEach(mapel => {
-    bulkForm.kkm_data.push({
-      mata_pelajaran_id: mapel.id,
-      kkm: 75
+    props.kelasList.forEach(kelas => {
+      bulkForm.kkm_data.push({
+        mata_pelajaran_id: mapel.id,
+        kelas_id: kelas.id,
+        kkm: 75
+      })
     })
   })
 }
@@ -723,7 +783,7 @@ const submitBulkForm = () => {
   
   // Validasi data sebelum submit
   const validData = bulkForm.kkm_data.filter(item => {
-    return item.mata_pelajaran_id && item.kkm && 
+    return item.mata_pelajaran_id && item.kelas_id && item.kkm && 
            item.kkm >= 0 && item.kkm <= 100
   })
   
@@ -754,6 +814,10 @@ const applyFilters = () => {
   
   if (filters.mata_pelajaran_id) {
     params.append('mata_pelajaran_id', filters.mata_pelajaran_id)
+  }
+  
+  if (filters.kelas_id) {
+    params.append('kelas_id', filters.kelas_id)
   }
   
   if (filters.search) {

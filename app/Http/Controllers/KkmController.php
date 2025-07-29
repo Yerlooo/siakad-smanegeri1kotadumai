@@ -38,13 +38,17 @@ public function index()
         $tahunAjaran = Setting::get('academic_year', '2024/2025');
         $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
 
-        // Query dasar - KKM sekarang universal (tidak terikat kelas)
-        $query = KkmMataPelajaran::with(['mataPelajaran'])
+        // Query dasar - KKM per kelas
+        $query = KkmMataPelajaran::with(['mataPelajaran', 'kelas'])
             ->bySemester($semester, $tahunAjaran);
 
         // Filter berdasarkan request
         if (request('mata_pelajaran_id')) {
             $query->where('mata_pelajaran_id', request('mata_pelajaran_id'));
+        }
+
+        if (request('kelas_id')) {
+            $query->where('kelas_id', request('kelas_id'));
         }
 
         if (request('search')) {
@@ -69,23 +73,28 @@ public function index()
                         ->paginate(15);
 
         // Ambil data untuk form
-        $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
-
-        // Jika guru, filter mata pelajaran yang diajar
         if ($user->isGuru()) {
+            // Jika guru, hanya ambil mata pelajaran yang diajar
             $mataPelajaranIds = JadwalPelajaran::where('guru_id', $user->id)
                 ->where('semester', $semester)
                 ->where('tahun_ajaran', $tahunAjaran)
                 ->where('status', true)
                 ->pluck('mata_pelajaran_id')
-                ->unique();
+                ->unique()
+                ->toArray();
             
-            $mataPelajaranList = $mataPelajaranList->whereIn('id', $mataPelajaranIds);
+            $mataPelajaranList = MataPelajaran::whereIn('id', $mataPelajaranIds)
+                ->orderBy('nama_mapel')
+                ->get();
+        } else {
+            // Jika admin/tata usaha, ambil semua mata pelajaran
+            $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
         }
 
         return Inertia::render('Kkm/Index', [
             'kkmList' => $kkmList,
-            'mataPelajaranList' => $mataPelajaranList,
+            'mataPelajaranList' => $mataPelajaranList->values()->toArray(), // Force to indexed array
+            'kelasList' => Kelas::orderBy('nama_kelas')->get()->toArray(),
             'semester' => $semester,
             'tahunAjaran' => $tahunAjaran,
             'userRole' => $user->role->name
@@ -106,12 +115,15 @@ public function index()
 
         $request->validate([
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
             'kkm' => 'required|numeric|min:0|max:100',
             'semester' => 'required|in:ganjil,genap',
             'tahun_ajaran' => 'required|string'
         ], [
             'mata_pelajaran_id.required' => 'Mata pelajaran wajib dipilih.',
             'mata_pelajaran_id.exists' => 'Mata pelajaran tidak valid.',
+            'kelas_id.required' => 'Kelas wajib dipilih.',
+            'kelas_id.exists' => 'Kelas tidak valid.',
             'kkm.required' => 'Nilai KKM wajib diisi.',
             'kkm.numeric' => 'Nilai KKM harus berupa angka.',
             'kkm.min' => 'Nilai KKM minimal 0.',
@@ -135,26 +147,28 @@ public function index()
             }
         }
 
-        // Cek duplikasi - sekarang hanya berdasarkan mata pelajaran
+        // Cek duplikasi - berdasarkan mata pelajaran dan kelas
         $existing = KkmMataPelajaran::where([
             'mata_pelajaran_id' => $request->mata_pelajaran_id,
+            'kelas_id' => $request->kelas_id,
             'semester' => $request->semester,
             'tahun_ajaran' => $request->tahun_ajaran
         ])->first();
 
         if ($existing) {
-            return back()->with('error', 'KKM untuk mata pelajaran ini sudah ada.');
+            return back()->with('error', 'KKM untuk mata pelajaran dan kelas ini sudah ada.');
         }
 
         try {
             KkmMataPelajaran::create([
                 'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'kelas_id' => $request->kelas_id,
                 'kkm' => $request->kkm,
                 'semester' => $request->semester,
                 'tahun_ajaran' => $request->tahun_ajaran
             ]);
             
-            return back()->with('success', 'KKM berhasil ditambahkan dan akan berlaku untuk seluruh kelas.');
+            return back()->with('success', 'KKM berhasil ditambahkan untuk kelas yang dipilih.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menambahkan KKM. Silakan coba lagi.');
         }
@@ -176,12 +190,15 @@ public function index()
 
         $request->validate([
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
             'kkm' => 'required|numeric|min:0|max:100',
             'semester' => 'required|in:ganjil,genap',
             'tahun_ajaran' => 'required|string'
         ], [
             'mata_pelajaran_id.required' => 'Mata pelajaran wajib dipilih.',
             'mata_pelajaran_id.exists' => 'Mata pelajaran tidak valid.',
+            'kelas_id.required' => 'Kelas wajib dipilih.',
+            'kelas_id.exists' => 'Kelas tidak valid.',
             'kkm.required' => 'Nilai KKM wajib diisi.',
             'kkm.numeric' => 'Nilai KKM harus berupa angka.',
             'kkm.min' => 'Nilai KKM minimal 0.',
@@ -205,26 +222,28 @@ public function index()
             }
         }
 
-        // Cek duplikasi (kecuali record saat ini) - sekarang hanya berdasarkan mata pelajaran
+        // Cek duplikasi (kecuali record saat ini) - berdasarkan mata pelajaran dan kelas
         $existing = KkmMataPelajaran::where([
             'mata_pelajaran_id' => $request->mata_pelajaran_id,
+            'kelas_id' => $request->kelas_id,
             'semester' => $request->semester,
             'tahun_ajaran' => $request->tahun_ajaran
         ])->where('id', '!=', $id)->first();
 
         if ($existing) {
-            return back()->with('error', 'KKM untuk mata pelajaran ini sudah ada.');
+            return back()->with('error', 'KKM untuk mata pelajaran dan kelas ini sudah ada.');
         }
 
         try {
             $kkm->update([
                 'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'kelas_id' => $request->kelas_id,
                 'kkm' => $request->kkm,
                 'semester' => $request->semester,
                 'tahun_ajaran' => $request->tahun_ajaran
             ]);
             
-            return back()->with('success', 'KKM berhasil diperbarui untuk seluruh kelas.');
+            return back()->with('success', 'KKM berhasil diperbarui untuk kelas yang dipilih.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memperbarui KKM. Silakan coba lagi.');
         }
@@ -286,6 +305,7 @@ public function index()
         $request->validate([
             'kkm_data' => 'required|array|min:1',
             'kkm_data.*.mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kkm_data.*.kelas_id' => 'required|exists:kelas,id',
             'kkm_data.*.kkm' => 'required|numeric|min:0|max:100'
         ]);
 
@@ -296,9 +316,10 @@ public function index()
             $errorMessages = [];
 
             foreach ($request->kkm_data as $index => $kkmData) {
-                // Cek duplikasi - sekarang hanya berdasarkan mata pelajaran
+                // Cek duplikasi - berdasarkan mata pelajaran dan kelas
                 $existing = KkmMataPelajaran::where([
                     'mata_pelajaran_id' => $kkmData['mata_pelajaran_id'],
+                    'kelas_id' => $kkmData['kelas_id'],
                     'semester' => $semester,
                     'tahun_ajaran' => $tahunAjaran
                 ])->first();
@@ -313,6 +334,7 @@ public function index()
                     // Buat baru jika belum ada
                     KkmMataPelajaran::create([
                         'mata_pelajaran_id' => $kkmData['mata_pelajaran_id'],
+                        'kelas_id' => $kkmData['kelas_id'],
                         'kkm' => $kkmData['kkm'],
                         'semester' => $semester,
                         'tahun_ajaran' => $tahunAjaran
@@ -323,7 +345,7 @@ public function index()
 
             DB::commit();
 
-            return back()->with('success', "Berhasil memproses {$successCount} data KKM untuk seluruh kelas.");
+            return back()->with('success', "Berhasil memproses {$successCount} data KKM per kelas.");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal memproses data KKM. Silakan coba lagi.');

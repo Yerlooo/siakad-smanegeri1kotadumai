@@ -209,11 +209,17 @@ class NilaiSiswaController extends Controller
         $jenisNilai = JenisNilai::findOrFail($request->jenis_nilai_id);
         
         // Ambil KKM untuk mata pelajaran ini
-        $kkm = KkmMataPelajaran::where('mata_pelajaran_id', $request->mata_pelajaran_id)
-            ->where('kelas_id', $request->kelas_id)
-            ->where('semester', $semester)
-            ->where('tahun_ajaran', $tahunAjaran)
-            ->first();
+        $kkm = KkmMataPelajaran::forInputNilai(
+            $request->mata_pelajaran_id,
+            $request->kelas_id,
+            $semester,
+            $tahunAjaran
+        )->first();
+
+        // Jika tidak ditemukan KKM spesifik, coba cari KKM default atau buat peringatan
+        if (!$kkm) {
+            \Log::warning("KKM tidak ditemukan untuk Mata Pelajaran ID: {$request->mata_pelajaran_id}, Kelas ID: {$request->kelas_id}, Semester: {$semester}, Tahun Ajaran: {$tahunAjaran}");
+        }
 
         // Ambil nilai yang sudah ada (jika edit)
         $nilaiExisting = NilaiSiswa::where('mata_pelajaran_id', $request->mata_pelajaran_id)

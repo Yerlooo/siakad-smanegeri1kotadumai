@@ -10,6 +10,7 @@ class KkmMataPelajaran extends Model
     
     protected $fillable = [
         'mata_pelajaran_id',
+        'kelas_id',
         'kkm',
         'semester',
         'tahun_ajaran'
@@ -28,6 +29,11 @@ class KkmMataPelajaran extends Model
         return $this->belongsTo(MataPelajaran::class);
     }
 
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class);
+    }
+
     // Scopes
     public function scopeBySemester($query, $semester, $tahunAjaran)
     {
@@ -38,5 +44,18 @@ class KkmMataPelajaran extends Model
     public function scopeByMapel($query, $mataPelajaranId)
     {
         return $query->where('mata_pelajaran_id', $mataPelajaranId);
+    }
+
+    public function scopeByKelas($query, $kelasId)
+    {
+        return $query->where('kelas_id', $kelasId);
+    }
+
+    public function scopeForInputNilai($query, $mataPelajaranId, $kelasId, $semester, $tahunAjaran)
+    {
+        return $query->where('mata_pelajaran_id', $mataPelajaranId)
+                    ->where('kelas_id', $kelasId)
+                    ->where('semester', $semester)
+                    ->where('tahun_ajaran', $tahunAjaran);
     }
 }

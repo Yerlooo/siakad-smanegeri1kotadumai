@@ -13,7 +13,13 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                     <div class="text-center sm:text-right">
                         <div class="text-sm text-gray-600">KKM</div>
-                        <div class="text-lg font-bold text-blue-600">{{ kkm?.kkm || 75 }}</div>
+                        <div :class="[
+                            'text-lg font-bold',
+                            kkm ? 'text-blue-600' : 'text-orange-500'
+                        ]">
+                            {{ kkmValue }}
+                            <span v-if="!kkm" class="text-xs text-orange-600 ml-1">(default)</span>
+                        </div>
                     </div>
                     <div class="text-center sm:text-right">
                         <div class="text-sm text-gray-600">Bobot</div>
@@ -44,7 +50,7 @@
                                 <p class="mb-2"><strong>Jenis Nilai:</strong> {{ jenisNilai.nama }} (Bobot: {{ jenisNilai.bobot }}%)</p>
                                 <ul class="list-disc pl-5 space-y-1">
                                     <li>Masukkan nilai dengan rentang 0-100</li>
-                                    <li>Nilai di bawah KKM ({{ kkm?.kkm || 75 }}) akan ditandai merah</li>
+                                    <li>Nilai di bawah KKM akan ditandai merah</li>
                                     <li>Simpan sebagai <strong>Draft</strong> untuk sementara atau <strong>Final</strong> untuk menyelesaikan</li>
                                     <li class="font-semibold text-yellow-700" v-if="ungradedStudentsCount > 0">
                                         ⚠️ Semua siswa harus dinilai sebelum dapat menyimpan sebagai Final
@@ -73,6 +79,28 @@
                                     <li>Input nilai tidak dapat diubah kecuali melalui approval</li>
                                     <li>Gunakan tombol <strong>✏️</strong> untuk mengajukan perubahan nilai kepada admin</li>
                                     <li>Menunggu persetujuan admin untuk dapat mengubah nilai final</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Panel jika KKM belum diset -->
+                <div v-if="!kkm" class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-orange-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-orange-800">⚠️ KKM Belum Diatur</h3>
+                            <div class="mt-2 text-sm text-orange-700">
+                                <p class="mb-2">KKM untuk <strong>{{ mataPelajaran.nama_mapel }}</strong> di kelas <strong>{{ kelas.nama_kelas }}</strong> belum diatur.</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Sistem menggunakan KKM default <strong>75</strong> sementara</li>
+                                    <li>Silakan atur KKM di <Link :href="route('kkm.index')" class="text-orange-600 underline hover:text-orange-800">Menu Manajemen KKM</Link></li>
+                                    <li>KKM yang tepat akan membantu evaluasi ketuntasan belajar siswa</li>
                                 </ul>
                             </div>
                         </div>
@@ -159,7 +187,7 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(siswa, index) in filteredSiswa" :key="siswa.id"
-                                    :class="{ 'bg-red-50': (form.nilai_siswa[siswa.id]?.nilai || 0) < (kkm?.kkm || 75) }">
+                                    :class="{ 'bg-red-50': (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue }">
                                     <!-- Nomor -->
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {{ index + 1 }}
@@ -202,7 +230,7 @@
                                        'w-20 px-3 py-2 border rounded-md text-sm text-center font-medium',
                                        isNilaiFinal(siswa.id) 
                                            ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                                           : (form.nilai_siswa[siswa.id]?.nilai || 0) < (kkm?.kkm || 75) 
+                                           : (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue 
                                                ? 'border-red-300 bg-red-50 text-red-900' 
                                                : 'border-gray-300 bg-white text-gray-900'
                                    ]"
@@ -256,11 +284,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span :class="[
                                             'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                            (form.nilai_siswa[siswa.id]?.nilai || 0) >= (kkm?.kkm || 75)
+                                            (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue
                                                 ? 'bg-green-100 text-green-800'
                                                 : 'bg-red-100 text-red-800'
                                         ]">
-                                            {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= (kkm?.kkm || 75) ? 'Tuntas' : 'Belum Tuntas' }}
+                                            {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
                                         </span>
                                     </td>
                                     
@@ -281,7 +309,7 @@
                         <div v-for="(siswa, index) in filteredSiswa" :key="siswa.id"
                              :class="[
                                  'bg-white border rounded-lg p-4 shadow-sm',
-                                 (form.nilai_siswa[siswa.id]?.nilai || 0) < (kkm?.kkm || 75) ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                                 (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue ? 'border-red-200 bg-red-50' : 'border-gray-200'
                              ]">
                             <!-- Header -->
                             <div class="flex items-center justify-between mb-4">
@@ -312,7 +340,7 @@
                                                    'w-full px-3 py-2 border rounded-md text-sm text-center font-medium',
                                                    isNilaiFinal(siswa.id) 
                                                        ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                                                       : (form.nilai_siswa[siswa.id]?.nilai || 0) < (kkm?.kkm || 75) 
+                                                       : (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue 
                                                            ? 'border-red-300 bg-red-50 text-red-900' 
                                                            : 'border-gray-300 bg-white text-gray-900'
                                                ]"
@@ -372,11 +400,11 @@
                                 </div>
                                 <span :class="[
                                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                    (form.nilai_siswa[siswa.id]?.nilai || 0) >= (kkm?.kkm || 75)
+                                    (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue
                                         ? 'bg-green-100 text-green-800'
                                         : 'bg-red-100 text-red-800'
                                 ]">
-                                    {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= (kkm?.kkm || 75) ? 'Tuntas' : 'Belum Tuntas' }}
+                                    {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
                                 </span>
                             </div>
                         </div>
@@ -579,6 +607,14 @@ const bulkValue = ref('')
 const showApprovalModal = ref(false)
 const selectedSiswaForApproval = ref(null)
 
+// Helper function untuk mendapatkan nilai KKM
+const getKkmValue = () => {
+    return props.kkm?.kkm || 75
+}
+
+// Computed property untuk nilai KKM
+const kkmValue = computed(() => getKkmValue())
+
 // Confirm Modal State
 const showConfirmModal = ref(false)
 const showFinalConfirmModal = ref(false)
@@ -705,14 +741,15 @@ const filteredSiswa = computed(() => {
 
 const summary = computed(() => {
     const total = props.kelas?.siswa?.length || 0
+    const kkmValue = getKkmValue()
     
     const nilaiList = Object.values(form.nilai_siswa)
         .map(item => parseFloat(item?.nilai) || 0)
         .filter(nilai => nilai > 0)
     
     const sudahDinilai = nilaiList.length
-    const tuntas = nilaiList.filter(nilai => nilai >= (props.kkm?.kkm || 75)).length
-    const belumTuntas = nilaiList.filter(nilai => nilai > 0 && nilai < (props.kkm?.kkm || 75)).length
+    const tuntas = nilaiList.filter(nilai => nilai >= kkmValue).length
+    const belumTuntas = nilaiList.filter(nilai => nilai > 0 && nilai < kkmValue).length
     const rataRata = nilaiList.length > 0 ? nilaiList.reduce((a, b) => a + b, 0) / nilaiList.length : 0
 
     return { total, sudahDinilai, tuntas, belumTuntas, rataRata }
@@ -783,20 +820,20 @@ const applyBulkValue = () => {
 }
 
 const getPredikat = (nilai) => {
-    const kkm = props.kkm?.kkm || 75
+    const kkmValue = getKkmValue()
     if (nilai >= 90) return { huruf: 'A', predikat: 'Sangat Baik' }
     if (nilai >= 80) return { huruf: 'B+', predikat: 'Baik' }
-    if (nilai >= kkm) return { huruf: 'B', predikat: 'Baik' }
-    if (nilai >= kkm - 10) return { huruf: 'C+', predikat: 'Cukup' }
-    if (nilai >= kkm - 20) return { huruf: 'C', predikat: 'Cukup' }
+    if (nilai >= kkmValue) return { huruf: 'B', predikat: 'Baik' }
+    if (nilai >= kkmValue - 10) return { huruf: 'C+', predikat: 'Cukup' }
+    if (nilai >= kkmValue - 20) return { huruf: 'C', predikat: 'Cukup' }
     return { huruf: 'D', predikat: 'Kurang' }
 }
 
 const getPredikatClass = (nilai) => {
-    const kkm = props.kkm?.kkm || 75
+    const kkmValue = getKkmValue()
     if (nilai >= 90) return 'bg-blue-100 text-blue-800'
     if (nilai >= 80) return 'bg-green-100 text-green-800'
-    if (nilai >= kkm) return 'bg-yellow-100 text-yellow-800'
+    if (nilai >= kkmValue) return 'bg-yellow-100 text-yellow-800'
     return 'bg-red-100 text-red-800'
 }
 
