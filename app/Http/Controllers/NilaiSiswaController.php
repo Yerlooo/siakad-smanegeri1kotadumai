@@ -211,18 +211,27 @@ class NilaiSiswaController extends Controller
     {
         $user = auth()->user();
         
-        // Validasi input
+        // Validasi dasar
         $request->validate([
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'kelas_id' => 'required|exists:kelas,id',
             'jenis_nilai_id' => 'required|exists:jenis_nilai,id',
             'semester' => 'required|in:ganjil,genap',
             'tahun_ajaran' => 'required|string',
+            'status' => 'required|in:draft,final',
             'nilai_siswa' => 'required|array|min:1',
-            'nilai_siswa.*.siswa_id' => 'required|exists:siswa,id',
-            'nilai_siswa.*.nilai' => 'required|numeric|min:0|max:100',
-            'status' => 'required|in:draft,final'
         ]);
+
+        // Validasi nilai_siswa berdasarkan status
+        foreach ($request->nilai_siswa as $index => $nilaiData) {
+            $rules = [
+                "nilai_siswa.{$index}.siswa_id" => 'required|exists:siswa,id',
+                "nilai_siswa.{$index}.nilai" => 'required|numeric|min:0|max:100',
+                "nilai_siswa.{$index}.keterangan" => 'nullable|string|max:255'
+            ];
+            
+            $request->validate($rules);
+        }
 
         // Pastikan guru mengajar mata pelajaran ini
         $jadwal = JadwalPelajaran::where('guru_id', $user->id)
@@ -239,35 +248,56 @@ class NilaiSiswaController extends Controller
         try {
             DB::beginTransaction();
 
+            $successCount = 0;
+            $errorMessages = [];
+
             foreach ($request->nilai_siswa as $nilaiData) {
-                // Cek apakah nilai sudah ada
-                $existingNilai = NilaiSiswa::where([
-                    'siswa_id' => $nilaiData['siswa_id'],
-                    'mata_pelajaran_id' => $request->mata_pelajaran_id,
-                    'jenis_nilai_id' => $request->jenis_nilai_id,
-                    'semester' => $request->semester,
-                    'tahun_ajaran' => $request->tahun_ajaran
-                ])->first();
+                try {
+                    // Cek apakah nilai sudah ada
+                    $existingNilai = NilaiSiswa::where([
+                        'siswa_id' => $nilaiData['siswa_id'],
+                        'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                        'jenis_nilai_id' => $request->jenis_nilai_id,
+                        'semester' => $request->semester,
+                        'tahun_ajaran' => $request->tahun_ajaran
+                    ])->first();
 
-                $dataToSave = [
-                    'siswa_id' => $nilaiData['siswa_id'],
-                    'mata_pelajaran_id' => $request->mata_pelajaran_id,
-                    'jenis_nilai_id' => $request->jenis_nilai_id,
-                    'nilai' => $nilaiData['nilai'],
-                    'tanggal_input' => now()->format('Y-m-d'),
-                    'semester' => $request->semester,
-                    'tahun_ajaran' => $request->tahun_ajaran,
-                    'keterangan' => $nilaiData['keterangan'] ?? null,
-                    'guru_id' => $user->id,
-                    'status' => $request->status
-                ];
+                    // Cek apakah nilai sudah final dan tidak boleh diubah tanpa approval
+                    if ($existingNilai && $existingNilai->status === 'final' && $request->status === 'final') {
+                        // Jika mengubah nilai final, perlu approval (skip untuk sekarang)
+                        if ($existingNilai->nilai != $nilaiData['nilai']) {
+                            $siswa = Siswa::find($nilaiData['siswa_id']);
+                            $errorMessages[] = "Nilai final {$siswa->nama_lengkap} tidak dapat diubah tanpa persetujuan.";
+                            continue;
+                        }
+                    }
 
-                if ($existingNilai) {
-                    // Update jika sudah ada
-                    $existingNilai->update($dataToSave);
-                } else {
-                    // Create baru jika belum ada
-                    NilaiSiswa::create($dataToSave);
+                    $dataToSave = [
+                        'siswa_id' => $nilaiData['siswa_id'],
+                        'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                        'jenis_nilai_id' => $request->jenis_nilai_id,
+                        'nilai' => $nilaiData['nilai'],
+                        'tanggal_input' => now()->format('Y-m-d'),
+                        'semester' => $request->semester,
+                        'tahun_ajaran' => $request->tahun_ajaran,
+                        'keterangan' => $nilaiData['keterangan'] ?? null,
+                        'guru_id' => $user->id,
+                        'status' => $request->status
+                    ];
+
+                    if ($existingNilai) {
+                        // Update jika sudah ada
+                        $existingNilai->update($dataToSave);
+                    } else {
+                        // Create baru jika belum ada
+                        NilaiSiswa::create($dataToSave);
+                    }
+                    
+                    $successCount++;
+                    
+                } catch (\Exception $e) {
+                    $siswa = Siswa::find($nilaiData['siswa_id']);
+                    $errorMessages[] = "Error pada {$siswa->nama_lengkap}: " . $e->getMessage();
                 }
             }
 
@@ -277,15 +307,19 @@ class NilaiSiswaController extends Controller
             $mataPelajaran = MataPelajaran::find($request->mata_pelajaran_id);
             $kelas = Kelas::find($request->kelas_id);
             
-            $message = $request->status === 'final' 
-                ? "Nilai {$jenisNilai->nama} {$mataPelajaran->nama_mapel} kelas {$kelas->nama_kelas} berhasil disimpan dan difinalisasi."
-                : "Nilai {$jenisNilai->nama} {$mataPelajaran->nama_mapel} kelas {$kelas->nama_kelas} berhasil disimpan sebagai draft.";
+            $statusText = $request->status === 'final' ? 'final' : 'draft';
+            $message = "Berhasil menyimpan {$successCount} nilai {$jenisNilai->nama} {$mataPelajaran->nama_mapel} kelas {$kelas->nama_kelas} sebagai {$statusText}.";
+            
+            if (!empty($errorMessages)) {
+                $message .= " Namun ada beberapa error: " . implode(', ', $errorMessages);
+            }
 
             return redirect()->route('nilai-siswa.index')->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollback();
-            return back()->with('error', 'Terjadi kesalahan saat menyimpan nilai: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan nilai: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
