@@ -196,7 +196,7 @@
                         <div class="relative">
                             <Dropdown align="right" width="96">
                                 <template #trigger>
-                                    <button class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150">
+                                    <button @click="onNotificationButtonClick" class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h16z" />
@@ -217,11 +217,6 @@
                                             <div class="flex items-center justify-between">
                                                 <h3 class="text-sm font-medium text-gray-900">Notifikasi</h3>
                                                 <div class="flex space-x-2">
-                                                    <button v-if="unreadNotificationsCount > 0"
-                                                            @click="markAllNotificationsAsRead"
-                                                            class="text-xs text-blue-600 hover:text-blue-800">
-                                                        Tandai semua dibaca
-                                                    </button>
                                                     <Link :href="route('notifications.index')" 
                                                           class="text-xs text-blue-600 hover:text-blue-800">
                                                         Lihat semua
@@ -244,7 +239,6 @@
                                             <div v-for="notification in recentNotifications" 
                                                  :key="notification.id" 
                                                  @click="handleNotificationClick(notification)"
-                                                 :class="{'bg-blue-50': !notification.read_at, 'bg-white': notification.read_at}"
                                                  class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
                                                 <div class="flex items-start space-x-3">
                                                     <div :class="getNotificationIconColor(notification.type)" 
@@ -259,9 +253,6 @@
                                                         <p class="text-xs text-gray-500 mt-1">
                                                             {{ getRelativeTime(notification.created_at) }}
                                                         </p>
-                                                    </div>
-                                                    <div v-if="!notification.read_at" class="flex-shrink-0">
-                                                        <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -408,46 +399,34 @@ const getRelativeTime = (dateString) => {
 
 const markAllNotificationsAsRead = async () => {
     try {
-        const response = await fetch(route('notifications.mark-all-read'), {
-            method: 'PATCH',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        // Menggunakan Inertia untuk request yang lebih aman
+        router.patch(route('notifications.mark-all-read'), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                fetchNotifications()
+            },
+            onError: (errors) => {
+                console.error('Error marking all notifications as read:', errors)
             }
         })
-        
-        if (response.ok) {
-            fetchNotifications()
-        }
     } catch (error) {
         console.error('Error marking all notifications as read:', error)
     }
 }
 
-const handleNotificationClick = async (notification) => {
-    // Mark as read if unread
-    if (!notification.read_at) {
-        try {
-            const response = await fetch(route('notifications.mark-read', notification.id), {
-                method: 'PATCH',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                }
-            })
-            
-            if (response.ok) {
-                fetchNotifications()
-            }
-        } catch (error) {
-            console.error('Error marking notification as read:', error)
-        }
+// Fungsi untuk menangani klik pada logo notifikasi
+const onNotificationButtonClick = async () => {
+    // Jika ada notifikasi yang belum dibaca, tandai sebagai dibaca
+    if (unreadNotificationsCount.value > 0) {
+        // Delay sedikit agar dropdown terbuka dulu, lalu mark as read
+        setTimeout(() => {
+            markAllNotificationsAsRead()
+        }, 300) // Delay 300ms untuk memastikan dropdown sudah terbuka
     }
-    
+}
+
+const handleNotificationClick = async (notification) => {
     // Navigate to action if available
     if (notification.data.action_url) {
         router.visit(notification.data.action_url)
@@ -461,16 +440,27 @@ const fetchNotifications = async () => {
             return;
         }
         
-        const response = await fetch(route('notifications.recent'), {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
+        // Coba menggunakan axios jika tersedia, jika tidak gunakan fetch
+        let response
+        if (window.axios) {
+            response = await window.axios.get(route('notifications.recent'))
+            notifications.value = response.data.notifications || []
+        } else {
+            response = await fetch(route('notifications.recent'), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'same-origin' // Penting untuk session
+            })
+            
+            if (response.ok) {
+                const data = await response.json()
+                notifications.value = data.notifications || []
             }
-        })
-        if (response.ok) {
-            const data = await response.json()
-            notifications.value = data.notifications || []
         }
     } catch (error) {
         console.error('Error fetching notifications:', error)
