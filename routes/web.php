@@ -86,9 +86,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/absensi/laporan', [AbsensiController::class, 'laporan'])->name('absensi.laporan');
     });
     
-    // KKM Management (accessible by Kepala Tata Usaha and Tata Usaha)
-    Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
-        Route::resource('kkm', KkmController::class);
+    // KKM Management (accessible by Guru, Kepala Tata Usaha and Tata Usaha)
+    Route::middleware('role:guru,kepala_tatausaha,tata_usaha')->group(function () {
+        Route::get('/kkm', [KkmController::class, 'index'])->name('kkm.index');
+        Route::post('/kkm', [KkmController::class, 'store'])->name('kkm.store');
+        Route::put('/kkm/{id}', [KkmController::class, 'update'])->name('kkm.update');
+        Route::delete('/kkm/{id}', [KkmController::class, 'destroy'])->name('kkm.destroy');
+        Route::post('/kkm/bulk', [KkmController::class, 'bulkStore'])->name('kkm.bulk-store');
+        Route::post('/kkm/bulk-delete', [KkmController::class, 'bulkDelete'])->name('kkm.bulk-delete');
     });
     
     // Settings (accessible by Kepala Tata Usaha only)

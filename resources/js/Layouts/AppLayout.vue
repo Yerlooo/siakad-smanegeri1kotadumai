@@ -88,9 +88,9 @@
                         Absensi Siswa
                     </SidebarLink>
                     
-                    <!-- KKM Management (Kepala Tata Usaha & Tata Usaha) -->
+                    <!-- KKM Management (Guru, Kepala Tata Usaha & Tata Usaha) -->
                     <SidebarLink 
-                        v-if="canAccess(['kepala_tatausaha', 'tata_usaha'])"
+                        v-if="canAccess(['guru', 'kepala_tatausaha', 'tata_usaha'])"
                         :href="route('kkm.index')" 
                         :active="route().current('kkm.*')"
                         icon="🎯">
