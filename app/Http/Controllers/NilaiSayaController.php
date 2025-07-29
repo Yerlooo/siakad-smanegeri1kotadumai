@@ -21,15 +21,6 @@ class NilaiSayaController extends Controller
     {
         $user = auth()->user();
         
-        // Debug: Log role information
-        \Log::info('User accessing nilai-saya', [
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'role_id' => $user->role_id,
-            'role_name' => $user->role ? $user->role->name : 'No role',
-            'is_murid' => $user->isMurid()
-        ]);
-        
         // Pastikan yang mengakses adalah murid
         if (!$user->isMurid()) {
             return redirect()->route('dashboard')->with('error', 'Akses ditolak. Hanya murid yang dapat mengakses halaman ini.');
@@ -54,7 +45,7 @@ class NilaiSayaController extends Controller
         $nilaiSiswa = NilaiSiswa::with([
                 'mataPelajaran',
                 'jenisNilai', 
-                'guru.user'
+                'guru'
             ])
             ->where('siswa_id', $siswa->id)
             ->where('semester', $selectedSemester)
@@ -68,7 +59,7 @@ class NilaiSayaController extends Controller
         $nilaiPerMapel = $nilaiSiswa->groupBy('mata_pelajaran_id');
 
         // Ambil semua jenis nilai untuk header tabel
-        $jenisNilai = JenisNilai::aktif()->orderBy('urutan')->get();
+        $jenisNilai = JenisNilai::aktif()->orderBy('nama')->get();
 
         // Ambil KKM untuk setiap mata pelajaran
         $kkmData = KkmMataPelajaran::where('kelas_id', $siswa->kelas_id)

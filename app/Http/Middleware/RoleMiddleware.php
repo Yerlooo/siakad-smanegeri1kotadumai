@@ -19,7 +19,7 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
-        $user = auth()->user();
+        $user = auth()->user()->load('role');
         
         if (!$user->role) {
             abort(403, 'Unauthorized. No role assigned.');

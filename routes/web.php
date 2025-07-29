@@ -60,8 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/nilai-siswa/export/pdf', [NilaiSiswaController::class, 'exportPdf'])->name('nilai-siswa.export.pdf');
     });
     
-    // Nilai Saya - untuk Siswa
-    Route::middleware('role:siswa')->group(function () {
+    // Nilai Saya - untuk Murid
+    Route::middleware('role:murid')->group(function () {
         Route::get('/nilai-saya', [NilaiSayaController::class, 'index'])->name('nilai-saya.index');
         Route::get('/nilai-saya/export/pdf', [NilaiSayaController::class, 'exportPdf'])->name('nilai-saya.export-pdf');
     });
