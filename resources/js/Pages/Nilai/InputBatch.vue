@@ -25,8 +25,8 @@
 
         <div class="py-6 sm:py-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Info Panel -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <!-- Info Panel - Hanya tampil jika tidak ada nilai final -->
+                <div v-if="!hasAnyFinalNilai" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <div class="flex items-start">
                         <div class="flex-shrink-0">
                             <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -48,8 +48,31 @@
                     </div>
                 </div>
 
+                <!-- Warning Panel untuk Nilai Final -->
+                <div v-if="hasAnyFinalNilai" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">⚠️ Nilai Sudah Final - Tidak Dapat Diubah</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p class="mb-2">Terdapat nilai yang sudah berstatus <strong>FINAL</strong> dan tidak dapat diubah lagi.</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Semua fungsi edit (Draft, Final, Reset) telah dinonaktifkan</li>
+                                    <li>Input nilai tidak dapat diubah kecuali melalui approval</li>
+                                    <li>Gunakan tombol <strong>✏️</strong> untuk mengajukan perubahan nilai kepada admin</li>
+                                    <li>Menunggu persetujuan admin untuk dapat mengubah nilai final</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Form Input Nilai -->
-                <form @submit.prevent="submitNilai" class="bg-white shadow rounded-lg">
+                <form @submit.prevent="" class="bg-white shadow rounded-lg">
                     <!-- Header Form -->
                     <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -64,10 +87,22 @@
                                            v-model="bulkValue" 
                                            placeholder="Nilai sama"
                                            min="0" max="100"
-                                           class="w-24 px-3 py-1 border border-gray-300 rounded-md text-sm">
+                                           :disabled="hasAnyFinalNilai"
+                                           :class="[
+                                               'w-24 px-3 py-1 border rounded-md text-sm',
+                                               hasAnyFinalNilai 
+                                                   ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                                   : 'border-gray-300 bg-white text-gray-900'
+                                           ]">
                                     <button type="button" 
                                             @click="applyBulkValue"
-                                            class="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 whitespace-nowrap">
+                                            :disabled="hasAnyFinalNilai"
+                                            :class="[
+                                                'px-3 py-1 text-sm rounded-md whitespace-nowrap',
+                                                hasAnyFinalNilai 
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                                    : 'bg-gray-500 text-white hover:bg-gray-600'
+                                            ]">
                                         Apply ke Semua
                                     </button>
                                 </div>
@@ -358,7 +393,13 @@
                                 
                                 <button type="button" 
                                         @click="resetForm"
-                                        class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                        :disabled="hasAnyFinalNilai"
+                                        :class="[
+                                            'inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium',
+                                            hasAnyFinalNilai 
+                                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                                                : 'text-gray-700 bg-white hover:bg-gray-50'
+                                        ]">
                                     🔄 Reset
                                 </button>
                             </div>
@@ -366,14 +407,25 @@
                             <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
                                 <button type="button" 
                                         @click="submitAsDraft"
-                                        :disabled="form.processing"
-                                        class="inline-flex items-center justify-center px-6 py-2 border border-yellow-300 rounded-md text-sm font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 disabled:opacity-50">
+                                        :disabled="form.processing || !canSaveAsDraft"
+                                        :class="[
+                                            'inline-flex items-center justify-center px-6 py-2 border rounded-md text-sm font-medium',
+                                            canSaveAsDraft 
+                                                ? 'border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100' 
+                                                : 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                                        ]">
                                     💾 Simpan Draft
                                 </button>
                                 
-                                <button type="submit" 
-                                        :disabled="form.processing || !isFormValid"
-                                        class="inline-flex items-center justify-center px-6 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                                <button type="button" 
+                                        @click="submitAsFinal"
+                                        :disabled="form.processing || !canSaveAsFinal"
+                                        :class="[
+                                            'inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-md text-sm font-medium',
+                                            canSaveAsFinal 
+                                                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                        ]">
                                     <span v-if="form.processing">⏳ Menyimpan...</span>
                                     <span v-else>✅ Simpan Final</span>
                                 </button>
@@ -572,7 +624,27 @@ const isFormValid = computed(() => {
     return Object.values(form.nilai_siswa).some(item => item.nilai !== '' && item.nilai > 0)
 })
 
+// Check if any nilai is already final (untuk disable form)
+const hasAnyFinalNilai = computed(() => {
+    return Object.keys(form.nilai_siswa).some(siswaId => isNilaiFinal(siswaId))
+})
+
+// Check if form can be saved as draft
+const canSaveAsDraft = computed(() => {
+    return !hasAnyFinalNilai.value
+})
+
+// Check if form can be saved as final
+const canSaveAsFinal = computed(() => {
+    return !hasAnyFinalNilai.value && isFormValid.value
+})
+
 const applyBulkValue = () => {
+    if (hasAnyFinalNilai.value) {
+        alert('Tidak dapat menggunakan bulk value! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
+        return
+    }
+    
     if (bulkValue.value >= 0 && bulkValue.value <= 100) {
         Object.keys(form.nilai_siswa).forEach(siswaId => {
             form.nilai_siswa[siswaId].nilai = bulkValue.value
@@ -603,13 +675,15 @@ const updatePredikat = (siswaId) => {
 }
 
 const resetForm = () => {
+    if (hasAnyFinalNilai.value) {
+        alert('Tidak dapat mereset nilai! Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.')
+        return
+    }
+    
     if (confirm('Yakin ingin mereset semua nilai?')) {
         Object.keys(form.nilai_siswa).forEach(siswaId => {
-            // Only reset if not final
-            if (!isNilaiFinal(siswaId)) {
-                form.nilai_siswa[siswaId].nilai = ''
-                form.nilai_siswa[siswaId].keterangan = ''
-            }
+            form.nilai_siswa[siswaId].nilai = ''
+            form.nilai_siswa[siswaId].keterangan = ''
         })
     }
 }
@@ -651,15 +725,8 @@ const submitApprovalRequest = () => {
 }
 
 const submitAsDraft = () => {
-    // Only allow draft if no final values are being changed
-    const hasChangedFinalValues = Object.keys(form.nilai_siswa).some(siswaId => {
-        return isNilaiFinal(siswaId) && 
-               form.nilai_siswa[siswaId].nilai !== '' && 
-               form.nilai_siswa[siswaId].nilai != props.nilaiExisting[siswaId]?.nilai
-    })
-    
-    if (hasChangedFinalValues) {
-        alert('Tidak dapat menyimpan: terdapat nilai final yang diubah. Gunakan fitur permintaan persetujuan.')
+    if (hasAnyFinalNilai.value) {
+        alert('Tidak dapat menyimpan sebagai DRAFT! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
         return
     }
     
@@ -667,38 +734,64 @@ const submitAsDraft = () => {
     submitNilai()
 }
 
+const submitAsFinal = () => {
+    if (hasAnyFinalNilai.value) {
+        alert('Tidak dapat menyimpan sebagai FINAL! Terdapat nilai yang sudah berstatus FINAL. Gunakan fitur permintaan persetujuan untuk mengubah nilai final.')
+        return
+    }
+    
+    form.status = 'final'
+    submitNilai()
+}
+
 const submitNilai = () => {
-    // Check for changed final values
-    const hasChangedFinalValues = Object.keys(form.nilai_siswa).some(siswaId => {
-        return isNilaiFinal(siswaId) && 
-               form.nilai_siswa[siswaId].nilai !== '' && 
-               form.nilai_siswa[siswaId].nilai != props.nilaiExisting[siswaId]?.nilai
+    // Jika ada nilai final, tidak boleh submit sama sekali
+    if (hasAnyFinalNilai.value) {
+        alert('Tidak dapat menyimpan! Terdapat nilai yang sudah berstatus FINAL. Nilai final tidak dapat diubah tanpa persetujuan admin.')
+        return
+    }
+    
+    // Filter siswa yang akan disimpan
+    const nilaiSiswaToSave = {}
+    
+    Object.keys(form.nilai_siswa).forEach(siswaId => {
+        const item = form.nilai_siswa[siswaId]
+        const hasValue = item.nilai !== '' && item.nilai !== null && item.nilai !== undefined
+        
+        if (hasValue) {
+            nilaiSiswaToSave[siswaId] = {
+                siswa_id: parseInt(siswaId),
+                nilai: parseFloat(item.nilai),
+                keterangan: item.keterangan || ''
+            }
+        }
     })
-    
-    if (hasChangedFinalValues) {
-        alert('Tidak dapat menyimpan: terdapat nilai final yang diubah. Gunakan fitur permintaan persetujuan.')
+
+    if (Object.keys(nilaiSiswaToSave).length === 0) {
+        alert('Minimal input 1 nilai siswa!')
         return
     }
-    
-    // Filter hanya siswa yang memiliki nilai dan bukan nilai final yang diubah
-    const nilaiSiswaValid = Object.values(form.nilai_siswa)
-        .filter(item => {
-            const isValidValue = item.nilai !== '' && item.nilai >= 0
-            const isNotChangedFinal = !isNilaiFinal(item.siswa_id) || 
-                                    item.nilai == props.nilaiExisting[item.siswa_id]?.nilai
-            return isValidValue && isNotChangedFinal
+
+    // Siapkan data untuk dikirim
+    const formData = {
+        mata_pelajaran_id: form.mata_pelajaran_id,
+        kelas_id: form.kelas_id,
+        jenis_nilai_id: form.jenis_nilai_id,
+        semester: form.semester,
+        tahun_ajaran: form.tahun_ajaran,
+        status: form.status,
+        nilai_siswa: Object.values(nilaiSiswaToSave)
+    }
+
+    // Kirim data
+    form.transform(() => formData)
+        .post(route('nilai-siswa.store'), {
+            onSuccess: () => {
+                console.log('Nilai berhasil disimpan')
+            },
+            onError: (errors) => {
+                console.error('Error:', errors)
+            }
         })
-
-    if (nilaiSiswaValid.length === 0) {
-        alert('Minimal input 1 nilai siswa yang dapat diubah!')
-        return
-    }
-
-    form.nilai_siswa = nilaiSiswaValid.reduce((acc, item) => {
-        acc[item.siswa_id] = item
-        return acc
-    }, {})
-
-    form.post(route('nilai-siswa.store'))
 }
 </script>
