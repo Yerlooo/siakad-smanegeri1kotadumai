@@ -97,6 +97,15 @@
                         Manajemen KKM
                     </SidebarLink>
                     
+                    <!-- Nilai Saya (Murid) -->
+                    <SidebarLink 
+                        v-if="canAccess(['murid'])"
+                        :href="route('nilai-saya.index')" 
+                        :active="route().current('nilai-saya.*')"
+                        icon="📊">
+                        Nilai Saya
+                    </SidebarLink>
+                    
                     <!-- Approval Requests (Kepala Tata Usaha & Tata Usaha) -->
                     <SidebarLink 
                         v-if="canAccess(['kepala_tatausaha', 'tata_usaha'])"

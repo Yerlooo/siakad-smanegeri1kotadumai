@@ -9,6 +9,7 @@ use App\Http\Controllers\MataPelajaranController;
 use App\Http\Controllers\JadwalPelajaranController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\NilaiSiswaController;
+use App\Http\Controllers\NilaiSayaController;
 use App\Http\Controllers\KkmController;
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\ApprovalRequestController;
@@ -57,6 +58,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Export routes
         Route::get('/nilai-siswa/export/excel', [NilaiSiswaController::class, 'exportExcel'])->name('nilai-siswa.export.excel');
         Route::get('/nilai-siswa/export/pdf', [NilaiSiswaController::class, 'exportPdf'])->name('nilai-siswa.export.pdf');
+    });
+    
+    // Nilai Saya - untuk Siswa
+    Route::middleware('role:siswa')->group(function () {
+        Route::get('/nilai-saya', [NilaiSayaController::class, 'index'])->name('nilai-saya.index');
+        Route::get('/nilai-saya/export/pdf', [NilaiSayaController::class, 'exportPdf'])->name('nilai-saya.export-pdf');
     });
     
     // === SISTEM ABSENSI === //
