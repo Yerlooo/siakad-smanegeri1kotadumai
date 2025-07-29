@@ -93,9 +93,6 @@ class KelasController extends Controller
             ->with('success', 'Data kelas berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Kelas $kelas)
     {
         $kelas->load(['waliKelas', 'siswa', 'jadwalPelajaran.mataPelajaran', 'jadwalPelajaran.guru']);
@@ -106,9 +103,6 @@ class KelasController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Kelas $kelas)
     {
         if (!$this->canModifyData()) {

@@ -14,10 +14,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import FlashMessage from './FlashMessage.vue'
 
+const page = usePage()
 const messages = ref([])
 let nextId = 1
 
@@ -40,9 +41,9 @@ const removeMessage = (id) => {
     }
 }
 
-// Check for flash messages from Inertia
-onMounted(() => {
-    const page = usePage()
+const checkFlashMessages = () => {
+    // Clear existing messages first
+    messages.value = []
     
     // Success messages
     if (page.props.flash?.success) {
@@ -63,7 +64,17 @@ onMounted(() => {
     if (page.props.flash?.info) {
         addMessage('info', 'Informasi', page.props.flash.info)
     }
+}
+
+// Check for flash messages on mount
+onMounted(() => {
+    checkFlashMessages()
 })
+
+// Watch for changes in flash messages
+watch(() => page.props.flash, () => {
+    checkFlashMessages()
+}, { deep: true })
 
 // Expose methods for programmatic use
 defineExpose({

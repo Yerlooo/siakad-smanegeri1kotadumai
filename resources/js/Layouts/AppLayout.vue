@@ -268,9 +268,10 @@
                             <template #trigger>
                                 <button class="flex items-center px-2 sm:px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none focus:bg-gray-50 transition ease-in-out duration-150">
                                     <div class="flex items-center">
-                                        <img v-if="$page.props.auth.user.foto" 
-                                             :src="$page.props.auth.user.foto" 
-                                             class="w-6 h-6 sm:w-8 sm:h-8 rounded-full mr-1 sm:mr-2" 
+                                        <!-- Untuk role murid, gunakan foto siswa; untuk role lain gunakan foto user -->
+                                        <img v-if="getUserPhoto()" 
+                                             :src="getUserPhoto()" 
+                                             class="w-6 h-6 sm:w-8 sm:h-8 rounded-full mr-1 sm:mr-2 object-cover border border-gray-200" 
                                              :alt="$page.props.auth.user.name">
                                         <div v-else 
                                              class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300 mr-1 sm:mr-2 flex items-center justify-center">
@@ -290,7 +291,7 @@
                             </template>
 
                             <template #content>
-                                <DropdownLink :href="route('profile.edit')">
+                                <DropdownLink :href="canAccess(['murid']) ? route('murid.profile.edit') : route('profile.edit')">
                                     Lihat Profile
                                 </DropdownLink>
                                 <DropdownLink :href="route('logout')" method="post" as="button">
@@ -336,6 +337,23 @@ const notifications = ref([])
 const canAccess = (roles) => {
     const userRole = page.props.auth.user.role?.name
     return roles.includes(userRole)
+}
+
+// Method untuk mendapatkan foto user
+const getUserPhoto = () => {
+    const userRole = page.props.auth.user.role?.name
+    
+    // Jika role murid, gunakan foto siswa
+    if (userRole === 'murid' && page.props.auth.user.siswa?.foto) {
+        return `/storage/${page.props.auth.user.siswa.foto}`
+    }
+    
+    // Untuk role lain, gunakan foto user
+    if (page.props.auth.user.foto) {
+        return page.props.auth.user.foto
+    }
+    
+    return null
 }
 
 // Notification computed properties

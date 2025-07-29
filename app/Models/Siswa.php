@@ -30,12 +30,22 @@ class Siswa extends Model
         'foto',
     ];
 
+    protected $appends = [
+        'tanggal_lahir_formatted'
+    ];
+
     protected function casts(): array
     {
         return [
             'tanggal_lahir' => 'date',
             'tahun_masuk' => 'integer',
         ];
+    }
+
+    // Accessor untuk memastikan tanggal_lahir dalam format yang tepat untuk frontend
+    public function getTanggalLahirFormattedAttribute()
+    {
+        return $this->tanggal_lahir ? $this->tanggal_lahir->format('Y-m-d') : null;
     }
 
     // Relationships

@@ -10,6 +10,7 @@ use App\Http\Controllers\JadwalPelajaranController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\NilaiSiswaController;
 use App\Http\Controllers\NilaiSayaController;
+use App\Http\Controllers\MuridProfileController;
 use App\Http\Controllers\KkmController;
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\ApprovalRequestController;
@@ -64,6 +65,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:murid')->group(function () {
         Route::get('/nilai-saya', [NilaiSayaController::class, 'index'])->name('nilai-saya.index');
         Route::get('/nilai-saya/export/pdf', [NilaiSayaController::class, 'exportPdf'])->name('nilai-saya.export-pdf');
+        
+        // Profile Murid
+        Route::get('/murid/profile', [MuridProfileController::class, 'edit'])->name('murid.profile.edit');
+        Route::post('/murid/profile', [MuridProfileController::class, 'update'])->name('murid.profile.update');
+        Route::delete('/murid/profile/photo', [MuridProfileController::class, 'deletePhoto'])->name('murid.profile.delete-photo');
     });
     
     // === SISTEM ABSENSI === //
