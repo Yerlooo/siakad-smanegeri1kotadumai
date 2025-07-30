@@ -8,6 +8,27 @@
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Data Kelas</h1>
                     <p class="text-gray-600">Kelola data kelas sekolah</p>
+                    <!-- Statistik Kelas -->
+                    <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                            </svg>
+                            Total Kelas: {{ props.kelas?.total || props.kelas?.data?.length || 0 }}
+                        </span>
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                            </svg>
+                            Total Siswa: {{ totalSiswaAllKelas }}
+                        </span>
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Rata-rata/Kelas: {{ avgSiswaPerKelas }}
+                        </span>
+                    </div>
                 </div>
                 <Link v-if="canModify" :href="route('kelas.create')" 
                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
@@ -119,13 +140,13 @@
                                 Lihat Detail
                             </Link>
                             <div v-if="canModify" class="flex space-x-2">
-                                <Link :href="route('kelas.edit', kelasItem.id)"
+                                <Link v-if="canModify" :href="route('kelas.edit', kelasItem.id)"
                                       class="text-yellow-600 hover:text-yellow-900 p-1 rounded">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                     </svg>
                                 </Link>
-                                <button @click="confirmDelete(kelasItem)"
+                                <button v-if="canModify" @click="confirmDelete(kelasItem)"
                                         class="text-red-600 hover:text-red-900 p-1 rounded">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -198,6 +219,16 @@ const filteredKelas = computed(() => {
         
         return matchesSearch && matchesTingkat && matchesJurusan
     })
+})
+
+const totalSiswaAllKelas = computed(() => {
+    // Jumlah total siswa dari semua kelas yang ditampilkan
+    return filteredKelas.value.reduce((sum, kelas) => sum + (kelas.siswa_count || 0), 0)
+})
+
+const avgSiswaPerKelas = computed(() => {
+    if (filteredKelas.value.length === 0) return 0
+    return Math.round(totalSiswaAllKelas.value / filteredKelas.value.length)
 })
 
 const confirmDelete = (kelas) => {

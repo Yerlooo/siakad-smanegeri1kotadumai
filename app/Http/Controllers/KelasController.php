@@ -16,7 +16,8 @@ class KelasController extends Controller
     private function canModifyData()
     {
         $userRole = auth()->user()->role->name ?? null;
-        return in_array($userRole, ['kepala_tatausaha', 'tata_usaha', 'guru']);
+        // Guru hanya bisa melihat, tidak bisa tambah/edit/hapus
+        return in_array($userRole, ['kepala_tatausaha', 'tata_usaha']);
     }
 
     /**

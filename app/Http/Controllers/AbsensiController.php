@@ -45,30 +45,33 @@ class AbsensiController extends Controller
         $jadwalPelajaran = $mataPelajaranQuery->get();
 
         // Filter berdasarkan kelas dan mata pelajaran jika dipilih
-        if ($kelasId) {
+        if ($kelasId && $mataPelajaranId) {
+            // Hanya ambil jadwal yang cocok dengan kelas dan mapel yang diajar guru
+            $jadwalPelajaran = $jadwalPelajaran->filter(function($jadwal) use ($kelasId, $mataPelajaranId) {
+                return $jadwal->kelas_id == $kelasId && $jadwal->mata_pelajaran_id == $mataPelajaranId;
+            });
+        } elseif ($kelasId) {
             $jadwalPelajaran = $jadwalPelajaran->where('kelas_id', $kelasId);
-        }
-        
-        if ($mataPelajaranId) {
+        } elseif ($mataPelajaranId) {
             $jadwalPelajaran = $jadwalPelajaran->where('mata_pelajaran_id', $mataPelajaranId);
         }
 
-        // Ambil data absensi untuk tanggal yang dipilih
-        $absensiData = [];
+        $absensiData = []; // Initialize absensiData as empty array
+
         foreach ($jadwalPelajaran as $jadwal) {
             $siswaKelas = Siswa::where('kelas_id', $jadwal->kelas_id)->get();
-            
+
             $absensiQuery = Absensi::with(['siswa'])
                 ->where('tanggal', $tanggal)
                 ->where('mata_pelajaran_id', $jadwal->mata_pelajaran_id);
-            
+
             // Untuk guru, filter berdasarkan guru_id. Untuk kepala tata usaha, ambil dari guru yang mengajar
             if (!$user->isKepalaSekolah()) {
                 $absensiQuery->where('guru_id', $user->id);
             } else {
                 $absensiQuery->where('guru_id', $jadwal->guru_id);
             }
-            
+
             $absensiSiswa = $absensiQuery->get()->keyBy('siswa_id');
 
             $dataKelas = [
@@ -112,16 +115,13 @@ class AbsensiController extends Controller
                 'tanggal' => 'required|date',
                 'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
                 'guru_id' => 'nullable|exists:users,id',
-                'absensi' => 'required|array|min:1',
+                'absensi' => 'required|array',
                 'absensi.*.siswa_id' => 'required|exists:siswa,id',
-                'absensi.*.status' => 'required|in:hadir,sakit,izin,alpha',
-                'absensi.*.keterangan' => 'nullable|string|max:255',
-                'absensi.*.jam_masuk' => 'nullable|date_format:H:i',
-                'absensi.*.jam_keluar' => 'nullable|date_format:H:i'
+                'absensi.*.status' => ['required', Rule::in(Absensi::getStatusOptions())],
+                'absensi.*.jam_masuk' => 'nullable|string',
+                'absensi.*.jam_keluar' => 'nullable|string',
+                'absensi.*.keterangan' => 'nullable|string'
             ]);
-
-            \Log::info('Absensi validation passed:', $validated);
-
             $user = auth()->user();
             $tanggal = $validated['tanggal'];
             $mataPelajaranId = $validated['mata_pelajaran_id'];
@@ -195,59 +195,71 @@ class AbsensiController extends Controller
         $bulan = $request->get('bulan', Carbon::now()->month);
         $tahun = $request->get('tahun', Carbon::now()->year);
 
-        // Filter siswa berdasarkan kelas
-        $siswaQuery = Siswa::with(['kelas', 'user']);
-        
+        // Validasi jadwal pelajaran untuk guru
+        $jadwalGuruQuery = JadwalPelajaran::where('guru_id', $user->id);
         if ($kelasId) {
-            $siswaQuery->where('kelas_id', $kelasId);
+            $jadwalGuruQuery->where('kelas_id', $kelasId);
         }
-
-        if (!$user->isKepalaSekolah()) {
-            // Guru hanya bisa lihat siswa dari kelas yang diajarnya
-            $kelasGuru = JadwalPelajaran::where('guru_id', $user->id)
-                ->pluck('kelas_id')
-                ->toArray();
-            $siswaQuery->whereIn('kelas_id', $kelasGuru);
+        if ($mataPelajaranId) {
+            $jadwalGuruQuery->where('mata_pelajaran_id', $mataPelajaranId);
         }
+        $jadwalGuru = $jadwalGuruQuery->get();
 
-        $siswaList = $siswaQuery->get();
-
-        // Ambil rekap absensi
-        $rekapData = [];
-        foreach ($siswaList as $siswa) {
-            $query = Absensi::where('siswa_id', $siswa->id)
-                ->byBulan($bulan, $tahun);
-
-            if ($mataPelajaranId) {
-                $query->where('mata_pelajaran_id', $mataPelajaranId);
+        // Jika bukan kepala sekolah dan tidak ada jadwal yang cocok, return rekapData kosong
+        if (!$user->isKepalaSekolah() && ($kelasId || $mataPelajaranId) && $jadwalGuru->isEmpty()) {
+            $rekapData = [];
+        } else {
+            // Filter siswa berdasarkan kelas
+            $siswaQuery = Siswa::with(['kelas', 'user']);
+            if ($kelasId) {
+                $siswaQuery->where('kelas_id', $kelasId);
             }
+            if (!$user->isKepalaSekolah()) {
+                $kelasGuru = JadwalPelajaran::where('guru_id', $user->id)
+                    ->pluck('kelas_id')
+                    ->toArray();
+                $siswaQuery->whereIn('kelas_id', $kelasGuru);
+            }
+            $siswaList = $siswaQuery->get();
 
-            $absensiList = $query->with(['mataPelajaran'])->get();
-            
-            // Hitung statistik berdasarkan data yang sudah difilter
-            $statistik = [
-                'total' => $absensiList->count(),
-                'hadir' => $absensiList->where('status', 'hadir')->count(),
-                'sakit' => $absensiList->where('status', 'sakit')->count(),
-                'izin' => $absensiList->where('status', 'izin')->count(),
-                'alpha' => $absensiList->where('status', 'alpha')->count(),
-            ];
-            
-            // Hitung persentase kehadiran
-            $statistik['persentase_hadir'] = $statistik['total'] > 0 
-                ? round(($statistik['hadir'] / $statistik['total']) * 100, 2) 
-                : 0;
-
-            $rekapData[] = [
-                'siswa' => $siswa,
-                'absensi' => $absensiList,
-                'statistik' => $statistik
-            ];
+            // Ambil rekap absensi
+            $rekapData = [];
+            foreach ($siswaList as $siswa) {
+                $query = Absensi::where('siswa_id', $siswa->id)
+                    ->byBulan($bulan, $tahun);
+                if ($mataPelajaranId) {
+                    $query->where('mata_pelajaran_id', $mataPelajaranId);
+                }
+                $absensiList = $query->with(['mataPelajaran'])->get();
+                // Hitung statistik berdasarkan data yang sudah difilter
+                $statistik = [
+                    'total' => $absensiList->count(),
+                    'hadir' => $absensiList->where('status', 'hadir')->count(),
+                    'sakit' => $absensiList->where('status', 'sakit')->count(),
+                    'izin' => $absensiList->where('status', 'izin')->count(),
+                    'alpha' => $absensiList->where('status', 'alpha')->count(),
+                ];
+                // Hitung persentase kehadiran
+                $statistik['persentase_hadir'] = $statistik['total'] > 0 
+                    ? round(($statistik['hadir'] / $statistik['total']) * 100, 2) 
+                    : 0;
+                $rekapData[] = [
+                    'siswa' => $siswa,
+                    'absensi' => $absensiList,
+                    'statistik' => $statistik
+                ];
+            }
         }
 
-        // Data untuk dropdown
-        $kelasList = Kelas::all();
-        $mataPelajaranList = MataPelajaran::all();
+        // Data untuk dropdown: hanya kelas dan mapel yang diajar guru
+        if ($user->isKepalaSekolah()) {
+            $kelasList = Kelas::all();
+            $mataPelajaranList = MataPelajaran::all();
+        } else {
+            $jadwalGuru = JadwalPelajaran::where('guru_id', $user->id)->get();
+            $kelasList = $jadwalGuru->pluck('kelas')->unique('id')->values();
+            $mataPelajaranList = $jadwalGuru->pluck('mataPelajaran')->unique('id')->values();
+        }
 
         // Check if export is requested
         $format = $request->get('format');

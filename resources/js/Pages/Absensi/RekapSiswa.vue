@@ -369,8 +369,8 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
   rekapData: Array,
-  kelasList: Array,
-  mataPelajaranList: Array,
+  kelasList: Array, // Sudah terfilter dari backend untuk guru
+  mataPelajaranList: Array, // Sudah terfilter dari backend untuk guru
   selectedKelas: String,
   selectedMataPelajaran: String,
   bulan: Number,
@@ -394,8 +394,8 @@ const exporting = ref(false)
 const filters = reactive({
   kelas_id: props.selectedKelas || '',
   mata_pelajaran_id: props.selectedMataPelajaran || '',
-  bulan: props.bulan,
-  tahun: props.tahun
+  bulan: Number(props.bulan),
+  tahun: Number(props.tahun)
 })
 
 const bulanOptions = {
@@ -415,6 +415,9 @@ const totalAbsensi = computed(() => {
 })
 
 const applyFilters = () => {
+  // Pastikan bulan dan tahun bertipe number sebelum dikirim
+  filters.bulan = Number(filters.bulan)
+  filters.tahun = Number(filters.tahun)
   router.get(route('absensi.rekap-siswa'), filters, {
     preserveState: true,
     preserveScroll: true

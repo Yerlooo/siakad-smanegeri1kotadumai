@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             MataPelajaranSeeder::class,
             JenisNilaiSeeder::class,
+            KelasSeeder::class,
+            SiswaDataSeeder::class,
         ]);
 
         // Create default users

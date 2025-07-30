@@ -15,16 +15,114 @@ use Illuminate\Support\Facades\Hash;
 class SiswaController extends Controller
 {
     /**
+     * Check if user has permission for CUD operations
+     */
+    private function canModifyData()
+    {
+        $userRole = auth()->user()->role->name ?? null;
+        // Guru hanya bisa melihat, tidak bisa tambah/edit/hapus
+        return in_array($userRole, ['kepala_tatausaha', 'tata_usaha']);
+    }
+    /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $siswa = Siswa::with(['kelas'])
-            ->latest()
-            ->paginate(10);
+        // Build query dengan filter
+        $query = Siswa::with(['kelas']);
+
+        // Filter berdasarkan search
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('nama_lengkap', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('nis', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('email', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Filter berdasarkan status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter berdasarkan kelas
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+
+        // Statistik berdasarkan filter (untuk info hasil filter)
+        $filteredTotal = $query->count();
+
+        // Execute query dengan pagination
+        $siswa = $query->latest()->paginate(10)->withQueryString();
+
+        // Ambil semua kelas untuk filter dropdown
+        $allKelas = Kelas::select('id', 'nama_kelas', 'tingkat')
+            ->orderBy('tingkat')
+            ->orderBy('nama_kelas')
+            ->get();
+
+        // Ambil statistik siswa untuk dashboard
+        $hasFilter = $request->filled('search') || $request->filled('status') || $request->filled('kelas_id');
+        
+        if ($hasFilter) {
+            // Jika ada filter, hitung statistik berdasarkan filter
+            $baseQuery = Siswa::query();
+            
+            // Terapkan filter yang sama
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $baseQuery->where(function ($q) use ($searchTerm) {
+                    $q->where('nama_lengkap', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('nis', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('email', 'like', '%' . $searchTerm . '%');
+                });
+            }
+            
+            if ($request->filled('status')) {
+                $baseQuery->where('status', $request->status);
+            }
+            
+            if ($request->filled('kelas_id')) {
+                $baseQuery->where('kelas_id', $request->kelas_id);
+            }
+            
+            // Hitung statistik berdasarkan filter
+            $totalSiswa = $baseQuery->count();
+            $siswaAktif = (clone $baseQuery)->where('status', 'aktif')->count();
+            $siswaLulus = (clone $baseQuery)->where('status', 'lulus')->count();
+            $siswaPindah = (clone $baseQuery)->where('status', 'pindah')->count();
+            $siswaKeluar = (clone $baseQuery)->where('status', 'keluar')->count();
+            $filteredTotal = $totalSiswa;
+        } else {
+            // Jika tidak ada filter, gunakan statistik global
+            $totalSiswa = Siswa::count();
+            $siswaAktif = Siswa::where('status', 'aktif')->count();
+            $siswaLulus = Siswa::where('status', 'lulus')->count();
+            $siswaPindah = Siswa::where('status', 'pindah')->count();
+            $siswaKeluar = Siswa::where('status', 'keluar')->count();
+            $filteredTotal = $totalSiswa;
+        }
 
         return Inertia::render('Siswa/Index', [
-            'siswa' => $siswa
+            'siswa' => $siswa,
+            'allKelas' => $allKelas,
+            'statistics' => [
+                'totalSiswa' => $totalSiswa,
+                'siswaAktif' => $siswaAktif,
+                'siswaLulus' => $siswaLulus,
+                'siswaPindah' => $siswaPindah,
+                'siswaKeluar' => $siswaKeluar,
+                'filteredTotal' => $filteredTotal,
+                'hasFilter' => $hasFilter,
+                'globalTotalSiswa' => Siswa::count(), // Tetap kirim total global untuk referensi
+            ],
+            'filters' => [
+                'search' => $request->search,
+                'status' => $request->status,
+                'kelas_id' => $request->kelas_id,
+            ]
         ]);
     }
 

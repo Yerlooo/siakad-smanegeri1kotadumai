@@ -18,7 +18,7 @@ class DashboardController extends Controller
         
         $stats = [
             'total_guru' => User::whereHas('role', function($q) {
-                $q->whereIn('name', ['guru', 'kepala_tatausaha']);
+                $q->whereIn('name', ['guru', 'kepala_tatausaha', 'tata_usaha']);
             })->count(),
             'total_siswa' => Siswa::where('status', 'aktif')->count(),
             'total_kelas' => Kelas::count(),
