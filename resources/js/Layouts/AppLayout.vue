@@ -357,12 +357,17 @@ const getUserPhoto = () => {
 }
 
 // Notification computed properties
+const unreadNotifications = computed(() => {
+    return notifications.value.filter(n => !n.read_at)
+})
+
 const recentNotifications = computed(() => {
-    return notifications.value.slice(0, 5) // Show only 5 most recent
+    // Tampilkan hanya notifikasi yang belum dibaca, maksimal 5
+    return unreadNotifications.value.slice(0, 5)
 })
 
 const unreadNotificationsCount = computed(() => {
-    return notifications.value.filter(n => !n.read_at).length
+    return unreadNotifications.value.length
 })
 
 // Notification methods
@@ -423,25 +428,24 @@ const markAllNotificationsAsRead = async () => {
             preserveScroll: true,
             onSuccess: () => {
                 fetchNotifications()
+                // Tidak menampilkan pesan apapun ke user
             },
             onError: (errors) => {
+                // Hanya log error di console, tidak tampilkan ke user
                 console.error('Error marking all notifications as read:', errors)
             }
         })
     } catch (error) {
+        // Hanya log error di console, tidak tampilkan ke user
         console.error('Error marking all notifications as read:', error)
     }
 }
 
 // Fungsi untuk menangani klik pada logo notifikasi
 const onNotificationButtonClick = async () => {
-    // Jika ada notifikasi yang belum dibaca, tandai sebagai dibaca
-    if (unreadNotificationsCount.value > 0) {
-        // Delay sedikit agar dropdown terbuka dulu, lalu mark as read
-        setTimeout(() => {
-            markAllNotificationsAsRead()
-        }, 300) // Delay 300ms untuk memastikan dropdown sudah terbuka
-    }
+    // Tidak melakukan apapun, hanya membuka dropdown notifikasi
+    // Badge akan tetap tampil sampai notifikasi benar-benar ditandai sebagai dibaca di halaman notifikasi
+    // ...existing code...
 }
 
 const handleNotificationClick = async (notification) => {

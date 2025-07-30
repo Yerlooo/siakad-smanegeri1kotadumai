@@ -66,10 +66,10 @@ class NotificationController extends Controller
 
         // Return JSON response untuk AJAX request (bukan Inertia)
         if (($request->wantsJson() || $request->ajax()) && !$request->header('X-Inertia')) {
-            return response()->json(['success' => true, 'message' => 'Semua notifikasi ditandai sebagai dibaca.']);
+            return response()->json(['success' => true]);
         }
 
-        return redirect()->back()->with('success', 'Semua notifikasi ditandai sebagai dibaca.');
+        return redirect()->back();
     }
 
     /**
@@ -94,12 +94,17 @@ class NotificationController extends Controller
     public function deleteRead(Request $request)
     {
         $user = Auth::user();
-        
-        $user->notifications()
-            ->whereNotNull('read_at')
-            ->delete();
+        // Ambil semua notifikasi milik user dan hapus satu per satu
+        foreach ($user->notifications as $notification) {
+            $notification->delete();
+        }
 
-        return redirect()->back()->with('success', 'Semua notifikasi yang sudah dibaca berhasil dihapus.');
+        // Untuk AJAX request, kembalikan response JSON
+        if (($request->wantsJson() || $request->ajax()) && !$request->header('X-Inertia')) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back();
     }
 
     /**

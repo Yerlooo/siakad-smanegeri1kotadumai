@@ -21,9 +21,9 @@
                             </button>
                             <button 
                                 @click="deleteAllRead"
-                                :disabled="readCount === 0"
+                                :disabled="totalCount === 0"
                                 class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Hapus yang Dibaca
+                                Hapus Semua Notifikasi
                             </button>
                         </div>
                     </div>
@@ -299,10 +299,14 @@ const deleteNotification = (notificationId) => {
 }
 
 const deleteAllRead = () => {
-    if (confirm('Apakah Anda yakin ingin menghapus semua notifikasi yang sudah dibaca?')) {
+    console.log('Mengirim request hapus semua notifikasi...');
+    if (confirm('Apakah Anda yakin ingin menghapus semua notifikasi?')) {
         router.delete(route('notifications.delete-read'), {
             preserveScroll: true,
-            preserveState: true
+            preserveState: true,
+            onSuccess: () => {
+                router.reload()
+            }
         })
     }
 }

@@ -33,47 +33,42 @@ class AbsensiController extends Controller
         $mataPelajaranId = $request->get('mata_pelajaran_id');
 
         // Ambil mata pelajaran yang diajar guru ini
-        $mataPelajaranQuery = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'guru'])
-            ->where('guru_id', $user->id)
+        // Ambil semua jadwal yang diajar guru (untuk dropdown)
+        $jadwalAllQuery = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'guru'])
             ->where('status', true);
-
-        if ($user->isKepalaSekolah()) {
-            $mataPelajaranQuery = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'guru'])
-                ->where('status', true);
+        if (!$user->isKepalaSekolah()) {
+            $jadwalAllQuery->where('guru_id', $user->id);
         }
+        $jadwalAll = $jadwalAllQuery->get();
 
-        $jadwalPelajaran = $mataPelajaranQuery->get();
+        // Untuk dropdown
+        $kelasList = $jadwalAll->pluck('kelas')->unique('id')->values();
+        $mataPelajaranList = $jadwalAll->pluck('mataPelajaran')->unique('id')->values();
 
-        // Filter berdasarkan kelas dan mata pelajaran jika dipilih
+        // Filter jadwal berdasarkan filter aktif
+        $jadwalFiltered = $jadwalAll;
         if ($kelasId && $mataPelajaranId) {
-            // Hanya ambil jadwal yang cocok dengan kelas dan mapel yang diajar guru
-            $jadwalPelajaran = $jadwalPelajaran->filter(function($jadwal) use ($kelasId, $mataPelajaranId) {
+            $jadwalFiltered = $jadwalAll->filter(function($jadwal) use ($kelasId, $mataPelajaranId) {
                 return $jadwal->kelas_id == $kelasId && $jadwal->mata_pelajaran_id == $mataPelajaranId;
             });
         } elseif ($kelasId) {
-            $jadwalPelajaran = $jadwalPelajaran->where('kelas_id', $kelasId);
+            $jadwalFiltered = $jadwalAll->where('kelas_id', $kelasId);
         } elseif ($mataPelajaranId) {
-            $jadwalPelajaran = $jadwalPelajaran->where('mata_pelajaran_id', $mataPelajaranId);
+            $jadwalFiltered = $jadwalAll->where('mata_pelajaran_id', $mataPelajaranId);
         }
 
-        $absensiData = []; // Initialize absensiData as empty array
-
-        foreach ($jadwalPelajaran as $jadwal) {
+        $absensiData = [];
+        foreach ($jadwalFiltered as $jadwal) {
             $siswaKelas = Siswa::where('kelas_id', $jadwal->kelas_id)->get();
-
             $absensiQuery = Absensi::with(['siswa'])
                 ->where('tanggal', $tanggal)
                 ->where('mata_pelajaran_id', $jadwal->mata_pelajaran_id);
-
-            // Untuk guru, filter berdasarkan guru_id. Untuk kepala tata usaha, ambil dari guru yang mengajar
             if (!$user->isKepalaSekolah()) {
                 $absensiQuery->where('guru_id', $user->id);
             } else {
                 $absensiQuery->where('guru_id', $jadwal->guru_id);
             }
-
             $absensiSiswa = $absensiQuery->get()->keyBy('siswa_id');
-
             $dataKelas = [
                 'jadwal' => $jadwal,
                 'siswa' => $siswaKelas->map(function ($siswa) use ($absensiSiswa) {
@@ -83,13 +78,8 @@ class AbsensiController extends Controller
                     ];
                 })
             ];
-
             $absensiData[] = $dataKelas;
         }
-
-        // Untuk dropdown
-        $kelasList = $jadwalPelajaran->pluck('kelas')->unique('id')->values();
-        $mataPelajaranList = $jadwalPelajaran->pluck('mataPelajaran')->unique('id')->values();
 
         return Inertia::render('Absensi/Index', [
             'absensiData' => $absensiData,

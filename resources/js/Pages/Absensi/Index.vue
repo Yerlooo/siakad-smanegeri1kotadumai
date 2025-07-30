@@ -364,6 +364,9 @@ watch(() => props.absensiData, (newData) => {
 }, { deep: true, immediate: true })
 
 const applyFilters = () => {
+  // Pastikan value bertipe string sesuai kebutuhan backend
+  filters.kelas_id = filters.kelas_id ? String(filters.kelas_id) : ''
+  filters.mata_pelajaran_id = filters.mata_pelajaran_id ? String(filters.mata_pelajaran_id) : ''
   router.get(route('absensi.index'), filters, {
     preserveState: true,
     preserveScroll: true
