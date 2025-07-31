@@ -55,7 +55,7 @@
             <div class="p-6">
                 <div v-if="recentActivities.length > 0" class="space-y-4">
                     <div v-for="activity in recentActivities" 
-                         :key="activity.title" 
+                         :key="activity.id || activity.title + activity.time" 
                          class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -64,14 +64,14 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900">
-                                {{ activity.title }}
+                                {{ activity.title || 'Aktivitas' }}
                             </p>
                             <p class="text-sm text-gray-500">
-                                {{ activity.description }}
+                                {{ activity.description || '-' }}
                             </p>
                         </div>
                         <div class="flex-shrink-0 text-sm text-gray-400">
-                            {{ activity.time }}
+                            {{ formatActivityTime(activity.time) }}
                         </div>
                     </div>
                 </div>
@@ -122,4 +122,20 @@ defineProps({
     recentActivities: Array,
     user: Object
 })
+
+function formatActivityTime(time) {
+    if (!time) return ''
+    // Coba parse ISO string
+    const date = new Date(time)
+    if (isNaN(date.getTime())) return time // fallback
+    // Format: HH:mm atau dd MMM yyyy HH:mm
+    const options = { hour: '2-digit', minute: '2-digit' }
+    // Jika tanggal hari ini, tampilkan jam saja
+    const now = new Date()
+    if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString('id-ID', options)
+    } else {
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + date.toLocaleTimeString('id-ID', options)
+    }
+}
 </script>

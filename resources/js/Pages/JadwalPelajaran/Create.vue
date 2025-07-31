@@ -146,24 +146,6 @@
                                     {{ form.errors.jam_selesai }}
                                 </div>
                             </div>
-
-                            <!-- Ruangan -->
-                            <div>
-                                <label for="ruangan" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Ruangan
-                                </label>
-                                <input
-                                    id="ruangan"
-                                    v-model="form.ruangan"
-                                    type="text"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.ruangan }"
-                                    placeholder="Contoh: R101"
-                                />
-                                <div v-if="form.errors.ruangan" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.ruangan }}
-                                </div>
-                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -278,6 +260,7 @@
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import { watch } from 'vue'
 
 const props = defineProps({
     mataPelajaran: Array,
@@ -287,6 +270,7 @@ const props = defineProps({
 
 const kelasOptions = props.kelas
 
+
 const form = useForm({
     mata_pelajaran_id: '',
     kelas_id: '',
@@ -294,13 +278,48 @@ const form = useForm({
     hari: '',
     jam_mulai: '',
     jam_selesai: '',
-    ruangan: '',
     semester: '',
     tahun_ajaran: '2024/2025',
     status: true
 })
 
+// Ambil jam pelajaran dari mata pelajaran yang dipilih
+const getJamMinggu = () => {
+    const selected = props.mataPelajaran.find(m => m.id === form.mata_pelajaran_id)
+    return selected ? selected.jam_pelajaran : null
+}
+
+const timeToMinutes = (time) => {
+    if (!time) return 0
+    const [h, m] = time.split(':').map(Number)
+    return h * 60 + m
+}
+
+const validateJam = () => {
+    const jamMulai = timeToMinutes(form.jam_mulai)
+    const jamSelesai = timeToMinutes(form.jam_selesai)
+    const jamMinggu = getJamMinggu()
+    if (!jamMinggu || !form.jam_mulai || !form.jam_selesai) return true
+    const durasi = (jamSelesai - jamMulai) / 60
+    return durasi <= jamMinggu
+}
+
+watch(() => [form.jam_mulai, form.jam_selesai, form.mata_pelajaran_id], () => {
+    if (!validateJam()) {
+        form.errors.jam_mulai = `Durasi jam pelajaran melebihi batas ${getJamMinggu()} jam/minggu yang ditetapkan untuk mata pelajaran ini.`
+        form.errors.jam_selesai = `Durasi jam pelajaran melebihi batas ${getJamMinggu()} jam/minggu yang ditetapkan untuk mata pelajaran ini.`
+    } else {
+        form.errors.jam_mulai = undefined
+        form.errors.jam_selesai = undefined
+    }
+})
+
 const submit = () => {
+    if (!validateJam()) {
+        form.errors.jam_mulai = `Durasi jam pelajaran melebihi batas ${getJamMinggu()} jam/minggu yang ditetapkan untuk mata pelajaran ini.`
+        form.errors.jam_selesai = `Durasi jam pelajaran melebihi batas ${getJamMinggu()} jam/minggu yang ditetapkan untuk mata pelajaran ini.`
+        return
+    }
     form.post(route('jadwal-pelajaran.store'))
 }
 </script>

@@ -43,9 +43,11 @@ class JadwalPelajaranController extends Controller
             $query->where('kelas_id', $request->kelas_id);
         }
 
-        // Filter berdasarkan ruangan (untuk role selain murid)
-        if ($request->filled('ruangan') && $userRole !== 'murid') {
-            $query->where('ruangan', 'like', '%' . $request->ruangan . '%');
+        // Filter berdasarkan mata pelajaran (untuk role selain murid)
+        if ($request->filled('mapel') && $userRole !== 'murid') {
+            $query->whereHas('mataPelajaran', function($q) use ($request) {
+                $q->where('nama_mapel', 'like', '%' . $request->mapel . '%');
+            });
         }
 
         // Untuk murid, urutkan berdasarkan hari dan jam

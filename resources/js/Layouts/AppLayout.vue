@@ -5,6 +5,7 @@
              :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
             <!-- Logo -->
             <div class="flex items-center justify-center h-16 bg-blue-600 text-white flex-shrink-0">
+                <img src="/storage/logo-smansa.png" alt="Logo SMAN 1" class="h-10 w-10 mr-3 rounded-full bg-white object-contain border border-white shadow" />
                 <h1 class="text-lg font-bold">SIAKAD SMAN 1</h1>
             </div>
             

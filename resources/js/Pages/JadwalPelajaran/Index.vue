@@ -80,9 +80,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Cari Ruangan</label>
-                        <input v-model="filters.ruangan" @input="filterJadwal"
-                               type="text" placeholder="Cari berdasarkan ruangan..."
+                        <label class="block text-sm font-medium text-gray-700">Cari Mata Pelajaran</label>
+                        <input v-model="filters.mapel" @input="filterJadwal"
+                               type="text" placeholder="Cari berdasarkan mata pelajaran..."
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                 </div>
@@ -106,9 +106,6 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Hari & Jam
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Ruangan
-                                </th>
                                 <th v-if="userRole !== 'murid'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Aksi
                                 </th>
@@ -116,7 +113,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-if="jadwalPelajaran.data.length === 0">
-                                <td :colspan="userRole === 'murid' ? 5 : 6" class="px-6 py-4 text-center text-gray-500">
+                                <td :colspan="userRole === 'murid' ? 4 : 5" class="px-6 py-4 text-center text-gray-500">
                                     {{ userRole === 'murid' ? 'Belum ada jadwal pelajaran untuk kelas Anda' : 'Belum ada data jadwal pelajaran' }}
                                 </td>
                             </tr>
@@ -136,9 +133,6 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ jadwal.hari }}</div>
                                     <div class="text-sm text-gray-500">{{ formatTime(jadwal.jam_mulai) }} - {{ formatTime(jadwal.jam_selesai) }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ jadwal.ruangan || '-' }}
                                 </td>
                                 <td v-if="userRole !== 'murid'" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex justify-end space-x-2">
@@ -235,7 +229,7 @@ const selectedJadwal = ref(null)
 const filters = ref({
     hari: '',
     kelas_id: '',
-    ruangan: ''
+    mapel: ''
 })
 
 const formatTime = (timeString) => {
@@ -264,7 +258,6 @@ const filterJadwal = () => {
             params[key] = filters.value[key]
         }
     })
-    
     router.get(route('jadwal-pelajaran.index'), params, {
         preserveState: true,
         preserveScroll: true

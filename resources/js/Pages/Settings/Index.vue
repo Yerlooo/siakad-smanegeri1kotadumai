@@ -110,7 +110,7 @@
                                     <div class="text-xs sm:text-sm text-gray-600">Total Guru</div>
                                 </div>
                                 <div class="text-center p-3 bg-white rounded-lg">
-                                    <div class="text-xl sm:text-2xl font-bold text-green-600">{{ statistics.total_siswa }}</div>
+                                    <div class="text-xl sm:text-2xl font-bold text-green-600">{{ statistics.total_siswa ?? 0 }}</div>
                                     <div class="text-xs sm:text-sm text-gray-600">Total Siswa</div>
                                 </div>
                                 <div class="text-center p-3 bg-white rounded-lg">
@@ -118,7 +118,7 @@
                                     <div class="text-xs sm:text-sm text-gray-600">Mata Pelajaran</div>
                                 </div>
                                 <div class="text-center p-3 bg-white rounded-lg">
-                                    <div class="text-xl sm:text-2xl font-bold text-orange-600">{{ statistics.total_jadwal }}</div>
+                                    <div class="text-xl sm:text-2xl font-bold text-orange-600">{{ statistics.total_jadwal ?? 0 }}</div>
                                     <div class="text-xs sm:text-sm text-gray-600">Jadwal Aktif</div>
                                 </div>
                             </div>

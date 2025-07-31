@@ -402,6 +402,16 @@
 </template>
 
 <script setup>
+// Hak akses: hanya admin/tata usaha/kepala sekolah yang bisa modifikasi data siswa
+// Guru tidak bisa edit/tambah/hapus siswa
+const canModify = computed(() => {
+    // Pastikan props.auth ada dan punya role
+    // Contoh: props.auth.user.role
+    // Role yang boleh: 'admin', 'tu', 'kepala_sekolah'
+    const allowedRoles = ['kepala_tatausaha', 'tata_usaha']
+    const userRole = props?.auth?.user?.role
+    return allowedRoles.includes(userRole)
+})
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, computed, watch, onMounted } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'

@@ -67,9 +67,9 @@ class SettingsController extends Controller
                 'total_guru' => User::whereHas('role', function($q) {
                     $q->whereIn('name', ['guru', 'kepala_tatausaha', 'tata_usaha']);
                 })->count(),
-                'total_siswa' => 0, // Default if Siswa model has issues
+                'total_siswa' => Siswa::count(),
                 'total_mata_pelajaran' => MataPelajaran::count(),
-                'total_jadwal' => 0, // Default if JadwalPelajaran has issues
+                'total_jadwal' => JadwalPelajaran::where('status', true)->count(),
             ];
 
             return Inertia::render('Settings/Index', [

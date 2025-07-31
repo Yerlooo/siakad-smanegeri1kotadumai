@@ -38,7 +38,6 @@ class DashboardController extends Controller
     private function getRecentActivities($user)
     {
         $activities = [];
-        
         if ($user->isGuru() || $user->isKepalaSekolah()) {
             // Get today's schedule for teacher
             $todaySchedule = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
@@ -47,9 +46,9 @@ class DashboardController extends Controller
                 ->orderBy('jam_mulai')
                 ->take(5)
                 ->get();
-                
             foreach ($todaySchedule as $schedule) {
                 $activities[] = [
+                    'id' => 'schedule-' . $schedule->id,
                     'type' => 'schedule',
                     'title' => "Jadwal Mengajar: {$schedule->mataPelajaran->nama_mapel}",
                     'description' => "Kelas {$schedule->kelas->nama_kelas} - {$schedule->jam_mulai} s/d {$schedule->jam_selesai}",
@@ -57,7 +56,6 @@ class DashboardController extends Controller
                 ];
             }
         }
-
         return collect($activities)->sortBy('time')->values();
     }
 }
