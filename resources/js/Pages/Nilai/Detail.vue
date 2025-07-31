@@ -176,9 +176,6 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Aksi
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -215,18 +212,6 @@
                                               :class="getStatusClass(getStatusSiswa(siswa.id))">
                                             {{ getStatusLabel(getStatusSiswa(siswa.id)) }}
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                        <div class="flex items-center justify-center space-x-2">
-                                            <button @click="editNilaiSiswa(siswa.id)" 
-                                                    class="text-blue-600 hover:text-blue-900">
-                                                Edit
-                                            </button>
-                                            <button @click="lihatHistoriSiswa(siswa.id)" 
-                                                    class="text-green-600 hover:text-green-900">
-                                                Histori
-                                            </button>
-                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -389,19 +374,6 @@ const getStatusLabel = (status) => {
         case 'sebagian': return 'Sebagian'
         default: return 'Belum Ada'
     }
-}
-
-const editNilaiSiswa = (siswaId) => {
-    router.get(route('nilai-siswa.create'), {
-        mata_pelajaran_id: props.mataPelajaran.id,
-        kelas_id: props.kelas.id,
-        siswa_id: siswaId
-    })
-}
-
-const lihatHistoriSiswa = (siswaId) => {
-    // TODO: Implement histori nilai siswa
-    alert('Fitur histori akan segera tersedia')
 }
 
 const exportExcel = () => {

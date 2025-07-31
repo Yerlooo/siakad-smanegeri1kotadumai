@@ -107,7 +107,8 @@ class AbsensiController extends Controller
                 'guru_id' => 'nullable|exists:users,id',
                 'absensi' => 'required|array',
                 'absensi.*.siswa_id' => 'required|exists:siswa,id',
-                'absensi.*.status' => ['required', Rule::in(Absensi::getStatusOptions())],
+                // Perbaikan: validasi hanya menerima key dari status options
+                'absensi.*.status' => ['required', Rule::in(array_keys(Absensi::getStatusOptions()))],
                 'absensi.*.jam_masuk' => 'nullable|string',
                 'absensi.*.jam_keluar' => 'nullable|string',
                 'absensi.*.keterangan' => 'nullable|string'
