@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout page-title="Tambah Jadwal Pelajaran">
         <div class="max-w-4xl mx-auto">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

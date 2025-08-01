@@ -1,5 +1,5 @@
 <template>
-    <Head title="Tambah Data Guru" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Tambah Data Guru">
         <div class="max-w-4xl mx-auto">

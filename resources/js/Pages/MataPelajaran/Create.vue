@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout page-title="Tambah Mata Pelajaran">
         <div class="max-w-4xl mx-auto">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -23,15 +24,15 @@
                                 </label>
                                 <input
                                     id="nama"
-                                    v-model="form.nama"
+                                    v-model="form.nama_mapel"
                                     type="text"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.nama }"
+                                    :class="{ 'border-red-500': form.errors.nama_mapel }"
                                     placeholder="Contoh: Matematika"
                                     required
                                 />
-                                <div v-if="form.errors.nama" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.nama }}
+                                <div v-if="form.errors.nama_mapel" class="mt-2 text-sm text-red-600">
+                                    {{ form.errors.nama_mapel }}
                                 </div>
                             </div>
 
@@ -42,128 +43,42 @@
                                 </label>
                                 <input
                                     id="kode"
-                                    v-model="form.kode"
+                                    v-model="form.kode_mapel"
                                     type="text"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.kode }"
+                                    :class="{ 'border-red-500': form.errors.kode_mapel }"
                                     placeholder="Contoh: MTK"
                                     maxlength="10"
                                     required
                                 />
-                                <div v-if="form.errors.kode" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.kode }}
+                                <div v-if="form.errors.kode_mapel" class="mt-2 text-sm text-red-600">
+                                    {{ form.errors.kode_mapel }}
                                 </div>
                                 <p class="mt-1 text-sm text-gray-500">Maksimal 10 karakter</p>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Kategori -->
-                            <div>
-                                <label for="kategori" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Kategori <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="kategori"
-                                    v-model="form.kategori"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.kategori }"
-                                    required
-                                >
-                                    <option value="">Pilih Kategori</option>
-                                    <option value="wajib">Mata Pelajaran Wajib</option>
-                                    <option value="peminatan">Mata Pelajaran Peminatan</option>
-                                    <option value="lintas_minat">Lintas Minat</option>
-                                    <option value="pendalaman_minat">Pendalaman Minat</option>
-                                    <option value="muatan_lokal">Muatan Lokal</option>
-                                </select>
-                                <div v-if="form.errors.kategori" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.kategori }}
-                                </div>
-                            </div>
-
-                            <!-- Jenis -->
-                            <div>
-                                <label for="jenis" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Jenis <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="jenis"
-                                    v-model="form.jenis"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.jenis }"
-                                    required
-                                >
-                                    <option value="">Pilih Jenis</option>
-                                    <option value="teori">Teori</option>
-                                    <option value="praktik">Praktik</option>
-                                    <option value="teori_praktik">Teori dan Praktik</option>
-                                </select>
-                                <div v-if="form.errors.jenis" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.jenis }}
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Removed Kategori and Jenis fields -->
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <!-- Jam Tatap Muka -->
+                            <!-- Jam Tatap Muka only, SKS and KKM removed -->
                             <div>
                                 <label for="jam_tatap_muka" class="block text-sm font-medium text-gray-700 mb-2">
                                     Jam Tatap Muka/Minggu <span class="text-red-500">*</span>
                                 </label>
                                 <input
                                     id="jam_tatap_muka"
-                                    v-model="form.jam_tatap_muka"
+                                    v-model="form.jam_pelajaran"
                                     type="number"
                                     min="1"
                                     max="20"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.jam_tatap_muka }"
+                                    :class="{ 'border-red-500': form.errors.jam_pelajaran }"
                                     placeholder="2"
                                     required
                                 />
-                                <div v-if="form.errors.jam_tatap_muka" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.jam_tatap_muka }}
-                                </div>
-                            </div>
-
-                            <!-- SKS -->
-                            <div>
-                                <label for="sks" class="block text-sm font-medium text-gray-700 mb-2">
-                                    SKS
-                                </label>
-                                <input
-                                    id="sks"
-                                    v-model="form.sks"
-                                    type="number"
-                                    min="1"
-                                    max="10"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.sks }"
-                                    placeholder="2"
-                                />
-                                <div v-if="form.errors.sks" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.sks }}
-                                </div>
-                            </div>
-
-                            <!-- KKM -->
-                            <div>
-                                <label for="kkm" class="block text-sm font-medium text-gray-700 mb-2">
-                                    KKM (Kriteria Ketuntasan Minimal)
-                                </label>
-                                <input
-                                    id="kkm"
-                                    v-model="form.kkm"
-                                    type="number"
-                                    min="50"
-                                    max="100"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    :class="{ 'border-red-500': form.errors.kkm }"
-                                    placeholder="75"
-                                />
-                                <div v-if="form.errors.kkm" class="mt-2 text-sm text-red-600">
-                                    {{ form.errors.kkm }}
+                                <div v-if="form.errors.jam_pelajaran" class="mt-2 text-sm text-red-600">
+                                    {{ form.errors.jam_pelajaran }}
                                 </div>
                             </div>
                         </div>
@@ -232,17 +147,13 @@
 </template>
 
 <script setup>
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, Link, Head } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 
 const form = useForm({
-    nama: '',
-    kode: '',
-    kategori: '',
-    jenis: '',
-    jam_tatap_muka: '',
-    sks: '',
-    kkm: '',
+    nama_mapel: '',
+    kode_mapel: '',
+    jam_pelajaran: '',
     deskripsi: '',
     status: true
 })

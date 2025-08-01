@@ -1,15 +1,15 @@
 <template>
-    <Head title="Dashboard" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Dashboard">
         <!-- Welcome Card -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 text-white mb-6">
+        <div class="bg-gradient-to-r from-[#43a047] via-[#aee571] to-[#fbc02d] rounded-lg shadow-lg p-6 text-white mb-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold mb-2">
                         Selamat Datang, {{ $page.props.auth.user.name }}!
                     </h1>
-                    <p class="text-blue-100">
+                    <p class="text-yellow-100">
                         {{ $page.props.auth.user.role?.display_name }} - Sistem Informasi Akademik SMA Negeri 1 Kota Dumai
                     </p>
                 </div>
@@ -25,25 +25,25 @@
                 title="Total Guru" 
                 :value="stats.total_guru" 
                 icon="👨‍🏫" 
-                color="bg-blue-500" 
+                color="bg-green-600" 
             />
             <StatCard 
                 title="Total Siswa" 
                 :value="stats.total_siswa" 
                 icon="👨‍🎓" 
-                color="bg-green-500" 
+                color="bg-yellow-400" 
             />
             <StatCard 
                 title="Total Kelas" 
                 :value="stats.total_kelas" 
                 icon="🏫" 
-                color="bg-yellow-500" 
+                color="bg-green-500" 
             />
             <StatCard 
                 title="Mata Pelajaran" 
                 :value="stats.total_mata_pelajaran" 
                 icon="📚" 
-                color="bg-purple-500" 
+                color="bg-yellow-500" 
             />
         </div>
 
@@ -58,7 +58,7 @@
                          :key="activity.id || activity.title + activity.time" 
                          class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
                                 📅
                             </div>
                         </div>

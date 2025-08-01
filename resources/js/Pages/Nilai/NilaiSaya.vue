@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout title="Nilai Saya">
         <template #header>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">

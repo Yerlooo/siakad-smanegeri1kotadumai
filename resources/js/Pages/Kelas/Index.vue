@@ -1,5 +1,5 @@
 <template>
-    <Head title="Data Kelas" />
+    <Head title="SIAKAD" />
 
     <AppLayout page-title="Data Kelas">
         <div class="space-y-6">
@@ -31,7 +31,7 @@
                     </div>
                 </div>
                 <Link v-if="canModify" :href="route('kelas.create')" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -82,9 +82,9 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">{{ kelasItem.nama_kelas }}</h3>
                                 <div class="flex items-center space-x-2 mt-1">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        Tingkat {{ kelasItem.tingkat }}
-                                    </span>
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    Tingkat {{ kelasItem.tingkat }}
+                </span>
                                     <span v-if="kelasItem.jurusan" 
                                           class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                         {{ kelasItem.jurusan }}
@@ -111,7 +111,7 @@
                         <!-- Statistik -->
                         <div class="grid grid-cols-2 gap-4 mb-6">
                             <div class="text-center p-3 bg-gray-50 rounded-lg">
-                                <div class="text-2xl font-bold text-blue-600">{{ kelasItem.siswa_count }}</div>
+                                <div class="text-2xl font-bold text-green-600">{{ kelasItem.siswa_count }}</div>
                                 <div class="text-xs text-gray-600">Siswa</div>
                             </div>
                             <div class="text-center p-3 bg-gray-50 rounded-lg">
@@ -127,7 +127,7 @@
                                 <span>{{ Math.round((kelasItem.siswa_count / kelasItem.kapasitas) * 100) }}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-blue-600 h-2 rounded-full" 
+                                <div class="bg-green-600 h-2 rounded-full" 
                                      :style="{ width: Math.min((kelasItem.siswa_count / kelasItem.kapasitas) * 100, 100) + '%' }">
                                 </div>
                             </div>
@@ -169,7 +169,7 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada data kelas</h3>
                 <p class="text-gray-500 mb-4">{{ canModify ? 'Mulai dengan menambahkan kelas pertama' : 'Tidak ada data kelas tersedia' }}</p>
                 <Link v-if="canModify" :href="route('kelas.create')" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>

@@ -4,7 +4,7 @@
         <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col" 
              :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
             <!-- Logo -->
-            <div class="flex items-center justify-center h-16 bg-blue-600 text-white flex-shrink-0">
+            <div class="flex items-center justify-center h-16 bg-green-600 text-white flex-shrink-0">
                 <img src="/storage/logo-smansa.png" alt="Logo SMAN 1" class="h-10 w-10 mr-3 rounded-full bg-white object-contain border border-white shadow" />
                 <h1 class="text-lg font-bold">SIAKAD SMAN 1</h1>
             </div>
@@ -16,7 +16,8 @@
                     <SidebarLink 
                         :href="route('dashboard')" 
                         :active="route().current('dashboard')"
-                        icon="🏠">
+                        icon="🏠"
+                        active-class="bg-green-600 text-white">
                         Dashboard
                     </SidebarLink>
                     
@@ -141,9 +142,11 @@
                 <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 mt-auto">
                     <div class="flex items-center space-x-3 mb-3">
                         <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span class="text-blue-600 text-sm font-semibold">
-                                {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
-                            </span>
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-green-600 text-sm font-semibold">
+                                    {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
+                                </span>
+                            </div>
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 truncate">

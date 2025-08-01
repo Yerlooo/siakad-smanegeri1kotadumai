@@ -1,5 +1,5 @@
 <template>
-    <Head title="Data Guru" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Data Guru">
         <div class="space-y-6">
@@ -22,7 +22,7 @@
                 </div>
                 <Link v-if="permissions && permissions.canCreate"
                       :href="route('guru.create')" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -30,7 +30,7 @@
                 </Link>
                 <!-- Info role untuk guru -->
                 <div v-if="permissions && !permissions.canCreate" class="text-right">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -48,12 +48,12 @@
                             v-model="search"
                             type="text" 
                             placeholder="Cari nama guru, NIP, atau email..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         >
                     </div>
                     <select 
                         v-model="roleFilter"
-                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     >
                         <option value="">Semua Role</option>
                         <option value="kepala_tatausaha">Kepala Tata Usaha</option>
@@ -185,14 +185,14 @@
                     <p class="text-gray-500 mb-4">
                         {{ permissions && permissions.canCreate ? 'Mulai dengan menambahkan data guru pertama' : 'Belum ada data guru yang tersedia' }}
                     </p>
-                    <Link v-if="permissions && permissions.canCreate"
-                          :href="route('guru.create')" 
-                          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        <span>Tambah Guru</span>
-                    </Link>
+            <Link v-if="permissions && permissions.canCreate"
+                  :href="route('guru.create')" 
+                  class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span>Tambah Guru</span>
+            </Link>
                 </div>
             </div>
         </div>

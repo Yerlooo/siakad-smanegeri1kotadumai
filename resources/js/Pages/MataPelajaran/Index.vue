@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout page-title="Mata Pelajaran">
         <div class="space-y-6">
             <!-- Header -->
@@ -8,7 +9,7 @@
                     <p class="mt-1 text-sm text-gray-600">Kelola mata pelajaran sekolah</p>
                 </div>
                 <Link v-if="canModify" :href="route('mata-pelajaran.create')" 
-                      class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                      class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -44,7 +45,7 @@
                     <div class="p-5">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
                                     <span class="text-white text-sm">📚</span>
                                 </div>
                             </div>
@@ -139,7 +140,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                         {{ mapel.kode_mapel }}
                                     </span>
                                 </td>

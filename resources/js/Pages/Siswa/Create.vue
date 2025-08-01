@@ -1,5 +1,5 @@
 <template>
-    <Head title="Tambah Data Siswa" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Tambah Data Siswa">
         <div class="max-w-4xl mx-auto">

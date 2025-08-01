@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout page-title="Jadwal Pelajaran">
         <div class="space-y-6">
             <!-- Flash Messages -->
@@ -25,7 +26,7 @@
                 </div>
                 <Link v-if="permissions && permissions.canCreate"
                       :href="route('jadwal-pelajaran.create')" 
-                      class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                      class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -33,7 +34,7 @@
                 </Link>
                 <!-- Info role untuk guru -->
                 <div v-if="permissions && !permissions.canCreate && userRole !== 'murid'" class="mt-4 sm:mt-0 text-right">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -59,7 +60,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Hari</label>
                         <select v-model="filters.hari" @change="filterJadwal" 
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
                             <option value="">Semua Hari</option>
                             <option value="Senin">Senin</option>
                             <option value="Selasa">Selasa</option>
@@ -72,7 +73,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Kelas</label>
                         <select v-model="filters.kelas_id" @change="filterJadwal"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
                             <option value="">Semua Kelas</option>
                             <option v-for="kelas in availableKelas" :key="kelas.id" :value="kelas.id">
                                 {{ kelas.nama_kelas }}
@@ -83,7 +84,7 @@
                         <label class="block text-sm font-medium text-gray-700">Cari Mata Pelajaran</label>
                         <input v-model="filters.mapel" @input="filterJadwal"
                                type="text" placeholder="Cari berdasarkan mata pelajaran..."
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
                     </div>
                 </div>
             </div>

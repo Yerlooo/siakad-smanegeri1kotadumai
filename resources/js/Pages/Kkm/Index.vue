@@ -1,4 +1,5 @@
 <template>
+  <Head title="SIAKAD SMANSA" />
   <AppLayout title="Manajemen KKM">
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -23,7 +24,7 @@
                 <button
                   @click="showBulkModal = true"
                   v-if="userRole !== 'guru'"
-                  class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                  class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
                 >
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -55,10 +56,10 @@
                 </label>
                 <select
                   v-model="filters.mata_pelajaran_id"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                 >
                   <option value="">Semua Mata Pelajaran</option>
-                  <option v-for="mapel in mataPelajaranList" :key="mapel.id" :value="mapel.id">
+                  <option v-for="mapel in (mataPelajaranList || [])" :key="mapel.id" :value="mapel.id">
                     {{ mapel.nama_mapel }}
                   </option>
                 </select>
@@ -70,7 +71,7 @@
                 </label>
                 <select
                   v-model="filters.kelas_id"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                 >
                   <option value="">Semua Kelas</option>
                   <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
@@ -82,7 +83,7 @@
               <div class="flex items-end">
                 <button
                   @click="applyFilters"
-                  class="w-full px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                  class="w-full px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
                 >
                   Filter
                 </button>
@@ -94,10 +95,10 @@
         <!-- Data Table -->
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
           <!-- Bulk Delete Actions -->
-          <div v-if="selectedItems.length > 0" class="bg-blue-50 px-6 py-3 border-b border-blue-200">
+          <div v-if="selectedItems.length > 0" class="bg-yellow-50 px-6 py-3 border-b border-yellow-200">
             <div class="flex items-center justify-between">
               <div class="flex items-center">
-                <span class="text-sm text-blue-800">
+                <span class="text-sm text-yellow-800">
                   {{ selectedItems.length }} item dipilih
                 </span>
               </div>
@@ -122,7 +123,7 @@
                       type="checkbox"
                       v-model="selectAll"
                       @change="toggleSelectAll"
-                      class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50"
                     />
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -158,7 +159,7 @@
                       v-model="selectedItems"
                       :value="kkm.id"
                       @change="updateSelectAll"
-                      class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50"
                     />
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -192,7 +193,7 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
                       @click="editKkm(kkm)"
-                      class="text-indigo-600 hover:text-indigo-900 transition-colors duration-150"
+                      class="text-yellow-600 hover:text-yellow-900 transition-colors duration-150"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -294,11 +295,11 @@
                       <select
                         id="mata_pelajaran_id"
                         v-model="form.mata_pelajaran_id"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         required
                       >
                         <option value="">Pilih Mata Pelajaran</option>
-                        <option v-for="mapel in mataPelajaranList" :key="mapel.id" :value="mapel.id">
+                        <option v-for="mapel in (mataPelajaranList || [])" :key="mapel.id" :value="mapel.id">
                           {{ mapel.nama_mapel }}
                         </option>
                       </select>
@@ -312,11 +313,11 @@
                       <select
                         id="kelas_id"
                         v-model="form.kelas_id"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         required
                       >
                         <option value="">Pilih Kelas</option>
-                        <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
+                        <option v-for="kelas in (kelasList || [])" :key="kelas.id" :value="kelas.id">
                           {{ kelas.nama_kelas }}
                         </option>
                       </select>
@@ -334,7 +335,7 @@
                         min="0"
                         max="100"
                         step="0.01"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         placeholder="Masukkan nilai KKM (0-100)"
                         required
                       />
@@ -388,7 +389,7 @@
                       <button
                         type="button"
                         @click="generateBulkTemplate"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
                       >
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -885,8 +886,8 @@ const confirmBulkDelete = () => {
 
 const getKkmStatusClass = (nilai) => {
   if (nilai >= 85) return 'bg-green-100 text-green-800'
-  if (nilai >= 75) return 'bg-blue-100 text-blue-800'
-  if (nilai >= 65) return 'bg-yellow-100 text-yellow-800'
+  if (nilai >= 75) return 'bg-yellow-100 text-yellow-800'
+  if (nilai >= 65) return 'bg-yellow-50 text-yellow-700'
   return 'bg-red-100 text-red-800'
 }
 

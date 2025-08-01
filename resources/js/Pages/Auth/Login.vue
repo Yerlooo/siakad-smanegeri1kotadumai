@@ -66,8 +66,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen flex">
-        <Head title="Login - SIAKAD SMA Negeri 1 Kota Dumai" />
+    <div class="min-h-screen flex" style="background: linear-gradient(135deg, #43a047 0%, #fbc02d 80%, #fbc02d 100%);">
+        <Head title="SIAKAD - SMA Negeri 1 Kota Dumai" />
         
         <!-- Left Side - Login Form -->
         <div class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
@@ -75,7 +75,7 @@ onMounted(() => {
                 <!-- Logo and Header -->
                 <div class="text-center mb-8">
                     <div class="flex justify-center mb-4">
-                        <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                        <div class="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden" style="background: linear-gradient(135deg, #43a047 0%, #fbc02d 100%);">
                             <img src="/storage/logo-smansa.png" alt="Logo SMA Negeri 1 Kota Dumai" class="w-16 h-16 object-contain" />
                         </div>
                     </div>
@@ -113,7 +113,7 @@ onMounted(() => {
                                 required
                                 autofocus
                                 autocomplete="username"
-                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150 ease-in-out"
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150 ease-in-out"
                                 :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500': form.errors.email }"
                                 placeholder="Masukkan email Anda"
                             />
@@ -138,7 +138,7 @@ onMounted(() => {
                                 v-model="form.password"
                                 required
                                 autocomplete="current-password"
-                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150 ease-in-out"
+                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150 ease-in-out"
                                 :class="{ 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500': form.errors.password }"
                                 placeholder="Masukkan password Anda"
                             />
@@ -166,7 +166,7 @@ onMounted(() => {
                                 id="remember"
                                 type="checkbox"
                                 v-model="form.remember"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                             />
                             <label for="remember" class="ml-2 block text-sm text-gray-700">
                                 Ingat saya
@@ -176,7 +176,10 @@ onMounted(() => {
                         <Link
                             v-if="canResetPassword"
                             :href="route('password.request')"
-                            class="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                            class="text-sm font-medium"
+                            style="color: #43a047; transition: color 0.2s;"
+                            @mouseover="event.target.style.color = '#fbc02d'"
+                            @mouseout="event.target.style.color = '#43a047'"
                         >
                             Lupa password?
                         </Link>
@@ -186,7 +189,9 @@ onMounted(() => {
                     <button
                         type="submit"
                         :disabled="form.processing || isLoading"
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out transform hover:scale-105"
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white"
+                        style="background: linear-gradient(90deg, #43a047 0%, #fbc02d 100%);"
+                        :class="['focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out transform hover:scale-105']"
                     >
                         <span v-if="!isLoading" class="flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +219,7 @@ onMounted(() => {
         </div>
 
         <!-- Right Side - Info Carousel -->
-        <div class="hidden lg:block relative w-0 flex-1 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700">
+        <div class="hidden lg:block relative w-0 flex-1" style="background: linear-gradient(135deg, #43a047 0%, #fbc02d 80%, #fbc02d 100%);">
             <!-- Background Pattern -->
             <div class="absolute inset-0 opacity-20">
                 <svg class="h-full w-full" fill="currentColor" viewBox="0 0 100 100">

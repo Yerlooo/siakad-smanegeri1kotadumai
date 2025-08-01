@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout page-title="Pengaturan">
         <div class="max-w-4xl mx-auto">
             <!-- Flash Messages -->

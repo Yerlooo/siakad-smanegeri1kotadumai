@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout title="Status Permintaan Saya">
         <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
@@ -62,7 +63,7 @@
                         <div class="flex space-x-2 mb-4 sm:mb-0">
                             <button 
                                 @click="selectedStatus = 'all'"
-                                :class="{'bg-blue-600 text-white': selectedStatus === 'all', 'bg-gray-200 text-gray-700': selectedStatus !== 'all'}"
+                                :class="{'bg-green-600 text-white': selectedStatus === 'all', 'bg-gray-200 text-gray-700': selectedStatus !== 'all'}"
                                 class="px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 Semua
                             </button>
@@ -94,7 +95,7 @@
                                 <div class="flex items-center justify-between">
                                     <div class="flex-1">
                                         <div class="flex items-center justify-between">
-                                            <p class="text-sm font-medium text-blue-600">
+                                            <p class="text-sm font-medium text-green-700">
                                                 {{ request.siswa.nama }} ({{ request.siswa.nis }})
                                             </p>
                                             <div class="ml-2 flex-shrink-0 flex">

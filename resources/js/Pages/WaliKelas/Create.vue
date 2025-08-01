@@ -1,5 +1,5 @@
 <template>
-    <Head title="Assign Wali Kelas" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Assign Wali Kelas">
         <div class="space-y-6">

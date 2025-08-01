@@ -122,7 +122,8 @@ class SiswaController extends Controller
                 'search' => $request->search,
                 'status' => $request->status,
                 'kelas_id' => $request->kelas_id,
-            ]
+            ],
+            'canModify' => $this->canModifyData(),
         ]);
     }
 

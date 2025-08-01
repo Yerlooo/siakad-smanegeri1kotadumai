@@ -1,5 +1,5 @@
 <template>
-    <Head title="Edit Data Guru" />
+    <Head title="SIAKAD SMANSA" />
 
     <AppLayout page-title="Edit Data Guru">
         <div class="max-w-4xl mx-auto">

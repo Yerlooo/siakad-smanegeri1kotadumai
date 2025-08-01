@@ -1,4 +1,5 @@
 <template>
+  <Head title="SIAKAD SMANSA" />
   <AppLayout title="Rekap Absensi Siswa">
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 leading-tight">

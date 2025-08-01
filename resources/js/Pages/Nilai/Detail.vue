@@ -1,4 +1,5 @@
 <template>
+    <Head title="SIAKAD SMANSA" />
     <AppLayout title="Detail Nilai Siswa">
         <template #header>
             <div class="flex items-center justify-between">
