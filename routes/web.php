@@ -73,12 +73,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     
     // === SISTEM ABSENSI === //
-    // Absensi (accessible by Guru and Kepala Tata Usaha)
-    Route::middleware('role:guru,kepala_tatausaha')->group(function () {
+    // Absensi (accessible by Guru only)
+    Route::middleware('role:guru')->group(function () {
         Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
         Route::post('/absensi', [AbsensiController::class, 'store'])->name('absensi.store');
         Route::get('/absensi/rekap-siswa', [AbsensiController::class, 'rekapSiswa'])->name('absensi.rekap-siswa');
         Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    });
+    
+    // Rekap Absensi (accessible by Guru, Kepala Tata Usaha and Tata Usaha)
+    Route::middleware('role:guru,kepala_tatausaha,tata_usaha')->group(function () {
+        Route::get('/absensi/rekap', [AbsensiController::class, 'rekap'])->name('absensi.rekap');
+        Route::get('/absensi/rekap/detail', [AbsensiController::class, 'rekapDetail'])->name('absensi.rekap.detail');
     });
     
     // Laporan Absensi (accessible by Kepala Tata Usaha and Tata Usaha)

@@ -17,14 +17,294 @@ use Illuminate\Validation\Rule;
 class AbsensiController extends Controller
 {
     /**
+     * Halaman rekap absensi untuk melihat data yang sudah diinputkan
+     */
+    public function rekap(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Filter berdasarkan tanggal
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+        $kelasId = $request->get('kelas_id');
+        $mataPelajaranId = $request->get('mata_pelajaran_id');
+        $guruId = $request->get('guru_id');
+        
+        // Base query untuk absensi
+        $absensiQuery = Absensi::with(['siswa.kelas', 'mataPelajaran', 'guru'])
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc');
+        
+        // Filter berdasarkan role
+        if ($user->isGuru()) {
+            // Guru hanya bisa melihat absensi yang dia input
+            $absensiQuery->where('guru_id', $user->id);
+        } elseif (!$user->isKepalaSekolah() && !$user->isTataUsaha()) {
+            // Role lain tidak punya akses
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+        
+        // Apply filters
+        if ($kelasId) {
+            $absensiQuery->whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            });
+        }
+        
+        if ($mataPelajaranId) {
+            $absensiQuery->where('mata_pelajaran_id', $mataPelajaranId);
+        }
+        
+        if ($guruId && ($user->isKepalaSekolah() || $user->isTataUsaha())) {
+            $absensiQuery->where('guru_id', $guruId);
+        }
+        
+        // Paginate results
+        $absensiData = $absensiQuery->paginate(20)->withQueryString();
+        
+        // Statistik singkat - buat query terpisah tanpa pagination
+        $statistikQuery = Absensi::with(['siswa.kelas', 'mataPelajaran', 'guru'])
+            ->whereBetween('tanggal', [$startDate, $endDate]);
+        
+        // Apply same filters untuk statistik
+        if ($user->isGuru()) {
+            $statistikQuery->where('guru_id', $user->id);
+        } elseif (!$user->isKepalaSekolah() && !$user->isTataUsaha()) {
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+        
+        if ($kelasId) {
+            $statistikQuery->whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            });
+        }
+        
+        if ($mataPelajaranId) {
+            $statistikQuery->where('mata_pelajaran_id', $mataPelajaranId);
+        }
+        
+        if ($guruId && ($user->isKepalaSekolah() || $user->isTataUsaha())) {
+            $statistikQuery->where('guru_id', $guruId);
+        }
+        
+        $totalAbsensi = $statistikQuery->count();
+        $totalHadir = (clone $statistikQuery)->where('status', 'hadir')->count();
+        $totalSakit = (clone $statistikQuery)->where('status', 'sakit')->count();
+        $totalIzin = (clone $statistikQuery)->where('status', 'izin')->count();
+        $totalAlpha = (clone $statistikQuery)->where('status', 'alpha')->count();
+        
+        // Data untuk dropdown filters
+        if ($user->isKepalaSekolah() || $user->isTataUsaha()) {
+            $kelasList = Kelas::withCount('siswa')->orderBy('nama_kelas')->get();
+            $mataPelajaranList = MataPelajaran::with(['jadwalPelajaran.guru:id,name'])
+                ->orderBy('nama_mapel')
+                ->get()
+                ->map(function($mapel) {
+                    $guru = $mapel->jadwalPelajaran->pluck('guru.name')->unique()->filter()->implode(', ');
+                    $mapel->guru_name = $guru ?: 'Belum ada guru';
+                    return $mapel;
+                });
+            $guruList = User::whereHas('role', function($q) {
+                $q->where('name', 'guru');
+            })->orderBy('name')->get();
+        } else {
+            // Guru hanya bisa lihat kelas dan mapel yang dia ajar
+            $jadwalGuru = JadwalPelajaran::where('guru_id', $user->id)->with(['kelas', 'mataPelajaran'])->get();
+            $kelasList = $jadwalGuru->pluck('kelas')->unique('id')->values()->map(function($kelas) {
+                $kelas->siswa_count = $kelas->siswa()->count();
+                return $kelas;
+            });
+            $mataPelajaranList = $jadwalGuru->pluck('mataPelajaran')->unique('id')->values()->map(function($mapel) {
+                $mapel->guru_name = auth()->user()->name;
+                return $mapel;
+            });
+            $guruList = collect(); // Guru tidak perlu dropdown guru
+        }
+        
+        return Inertia::render('Absensi/Rekap', [
+            'absensiData' => $absensiData,
+            'kelasList' => $kelasList,
+            'mataPelajaranList' => $mataPelajaranList,
+            'guruList' => $guruList,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'kelas_id' => $kelasId,
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'guru_id' => $guruId
+            ],
+            'statistics' => [
+                'total' => $totalAbsensi,
+                'hadir' => $totalHadir,
+                'sakit' => $totalSakit,
+                'izin' => $totalIzin,
+                'alpha' => $totalAlpha
+            ],
+            'canViewAll' => $user->isKepalaSekolah() || $user->isTataUsaha()
+        ]);
+    }
+
+    /**
+     * Detail halaman rekap absensi untuk kelas dan mata pelajaran tertentu
+     */
+    public function rekapDetail(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Filter berdasarkan tanggal - expand range untuk mengambil lebih banyak data
+        $startDate = $request->get('start_date', Carbon::now()->subMonths(3)->format('Y-m-d'));
+        $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
+        $kelasId = $request->get('kelas_id');
+        $mataPelajaranId = $request->get('mata_pelajaran_id');
+        $guruId = $request->get('guru_id');
+        
+        // Validasi kelas_id wajib ada
+        if (!$kelasId) {
+            return redirect()->route('absensi.rekap')->with('error', 'Kelas harus dipilih.');
+        }
+        
+        // Debug logging
+        \Log::info('RekapDetail Request Parameters:', [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'kelas_id' => $kelasId,
+            'mata_pelajaran_id' => $mataPelajaranId,
+            'guru_id' => $guruId,
+            'user_role' => $user->role ?? 'no_role',
+            'user_id' => $user->id
+        ]);
+        
+        // Base query untuk absensi dengan eager loading untuk optimasi
+        $absensiQuery = Absensi::with(['siswa', 'mataPelajaran', 'guru'])
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->orderBy('tanggal', 'asc')  // Urutkan ascending untuk pertemuan
+            ->orderBy('id', 'asc');      // Kemudian urutkan by id untuk multiple session di hari sama
+        
+        // Filter berdasarkan role
+        if ($user->isGuru()) {
+            // Guru hanya bisa melihat absensi yang dia input
+            $absensiQuery->where('guru_id', $user->id);
+        } elseif (!$user->isKepalaSekolah() && !$user->isTataUsaha()) {
+            // Role lain tidak punya akses
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+        
+        // Apply filters
+        $absensiQuery->whereHas('siswa', function($q) use ($kelasId) {
+            $q->where('kelas_id', $kelasId);
+        });
+        
+        if ($mataPelajaranId) {
+            $absensiQuery->where('mata_pelajaran_id', $mataPelajaranId);
+        }
+        
+        if ($guruId) {
+            $absensiQuery->where('guru_id', $guruId);
+        }
+        
+        // Log the query
+        $sql = $absensiQuery->toSql();
+        $bindings = $absensiQuery->getBindings();
+        \Log::info('Absensi SQL Query:', [
+            'sql' => $sql,
+            'bindings' => $bindings
+        ]);
+        
+        // Get all data (no pagination for detail view - we need all data for matrix)
+        $absensiData = $absensiQuery->get();
+        
+        \Log::info('Absensi Data Retrieved:', [
+            'total_records' => $absensiData->count(),
+            'sample_data' => $absensiData->take(3)->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'tanggal' => $item->tanggal,
+                    'siswa_name' => $item->siswa->nama_lengkap ?? 'No Name',
+                    'status' => $item->status,
+                    'mata_pelajaran' => $item->mataPelajaran->nama_mapel ?? 'No Mapel'
+                ];
+            })
+        ]);
+        
+        // Convert to paginator-like structure for frontend compatibility
+        $absensiDataFormatted = [
+            'data' => $absensiData,
+            'total' => $absensiData->count(),
+            'per_page' => $absensiData->count(),
+            'current_page' => 1,
+            'last_page' => 1,
+            'from' => 1,
+            'to' => $absensiData->count()
+        ];
+        
+        // Statistik terpisah
+        $totalAbsensi = $absensiData->count();
+        $totalHadir = $absensiData->where('status', 'hadir')->count();
+        $totalSakit = $absensiData->where('status', 'sakit')->count();
+        $totalIzin = $absensiData->where('status', 'izin')->count();
+        $totalAlpha = $absensiData->where('status', 'alpha')->count();
+        
+        // Data untuk informasi halaman
+        $selectedKelas = Kelas::find($kelasId);
+        $selectedMapel = $mataPelajaranId ? MataPelajaran::find($mataPelajaranId) : null;
+        
+        // Daftar mata pelajaran untuk filter (berdasarkan kelas yang dipilih)
+        $mataPelajaranList = MataPelajaran::whereHas('jadwalPelajaran', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            })
+            ->with(['jadwalPelajaran' => function($query) use ($kelasId) {
+                $query->where('kelas_id', $kelasId)->with('guru');
+            }])
+            ->get()
+            ->map(function($mapel) {
+                $guru = $mapel->jadwalPelajaran->first();
+                return [
+                    'id' => $mapel->id,
+                    'nama' => $mapel->nama_mapel,
+                    'guru_name' => $guru && $guru->guru ? $guru->guru->name : 'Tidak ada guru'
+                ];
+            });
+        
+        \Log::info('Final Data Summary:', [
+            'absensi_total' => $totalAbsensi,
+            'selected_kelas' => $selectedKelas->nama_kelas ?? 'No Kelas',
+            'selected_mapel' => $selectedMapel->nama_mapel ?? 'No Mapel',
+            'mata_pelajaran_list_count' => $mataPelajaranList->count()
+        ]);
+        
+        return Inertia::render('Absensi/RekapDetail', [
+            'absensiData' => $absensiDataFormatted,
+            'selectedKelas' => $selectedKelas,
+            'selectedMapel' => $selectedMapel,
+            'mataPelajaranList' => $mataPelajaranList,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'kelas_id' => $kelasId,
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'guru_id' => $guruId
+            ],
+            'statistics' => [
+                'total' => $totalAbsensi,
+                'hadir' => $totalHadir,
+                'sakit' => $totalSakit,
+                'izin' => $totalIzin,
+                'alpha' => $totalAlpha
+            ],
+            'canViewAll' => $user->isKepalaSekolah() || $user->isTataUsaha()
+        ]);
+    }
+
+    /**
      * Display a listing of absensi - Dashboard untuk Guru
      */
     public function index(Request $request)
     {
         $user = auth()->user();
         
-        // Hanya guru dan kepala tata usaha yang bisa akses
-        if (!$user->isGuru() && !$user->isKepalaSekolah()) {
+        // Hanya guru yang bisa akses
+        if (!$user->isGuru()) {
             return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
         }
 
@@ -35,10 +315,9 @@ class AbsensiController extends Controller
         // Ambil mata pelajaran yang diajar guru ini
         // Ambil semua jadwal yang diajar guru (untuk dropdown)
         $jadwalAllQuery = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'guru'])
-            ->where('status', true);
-        if (!$user->isKepalaSekolah()) {
-            $jadwalAllQuery->where('guru_id', $user->id);
-        }
+            ->where('status', true)
+            ->where('guru_id', $user->id); // Hanya jadwal guru yang login
+        
         $jadwalAll = $jadwalAllQuery->get();
 
         // Untuk dropdown
@@ -59,8 +338,8 @@ class AbsensiController extends Controller
 
         $absensiData = [];
         foreach ($jadwalFiltered as $jadwal) {
-            $siswaKelas = Siswa::where('kelas_id', $jadwal->kelas_id)->get();
-            $absensiQuery = Absensi::with(['siswa'])
+            $siswaKelas = Siswa::with('kelas')->where('kelas_id', $jadwal->kelas_id)->get();
+            $absensiQuery = Absensi::with(['siswa.kelas'])
                 ->where('tanggal', $tanggal)
                 ->where('mata_pelajaran_id', $jadwal->mata_pelajaran_id);
             if (!$user->isKepalaSekolah()) {
@@ -89,8 +368,8 @@ class AbsensiController extends Controller
             'selectedKelas' => $kelasId,
             'selectedMataPelajaran' => $mataPelajaranId,
             'statusOptions' => Absensi::getStatusOptions(),
-            'isKepalaSekolah' => $user->isKepalaSekolah(),
-            'isTataUsaha' => $user->role && in_array($user->role->name, ['kepala_tatausaha', 'tata_usaha'])
+            'isKepalaSekolah' => false, // Selalu false karena hanya guru yang akses
+            'isTataUsaha' => false // Selalu false karena hanya guru yang akses
         ]);
     }
 
@@ -561,8 +840,8 @@ class AbsensiController extends Controller
         
         return response()->json([
             'data' => $monitoringData,
-            'last_updated' => Carbon::now()->format('H:i:s'),
-            'timestamp' => Carbon::now()->timestamp
+            'last_updated' => Carbon::now('Asia/Jakarta')->format('H:i:s'),
+            'timestamp' => Carbon::now('Asia/Jakarta')->timestamp
         ]);
     }
 
@@ -571,7 +850,7 @@ class AbsensiController extends Controller
      */
     private function getMonitoringData($tanggal, $kelasId = null)
     {
-        // Query dasar untuk jadwal hari ini
+                // Query dasar untuk jadwal hari ini
         $jadwalQuery = JadwalPelajaran::with([
             'mataPelajaran',
             'kelas',
@@ -598,9 +877,14 @@ class AbsensiController extends Controller
                               ->where('status', 'aktif')
                               ->count();
             
-            // Ambil data absensi untuk mata pelajaran dan tanggal ini
+            // Ambil data absensi untuk mata pelajaran, tanggal, dan siswa di kelas ini
+            $siswaIds = Siswa::where('kelas_id', $jadwal->kelas_id)
+                            ->where('status', 'aktif')
+                            ->pluck('id');
+                            
             $absensiData = Absensi::where('mata_pelajaran_id', $jadwal->mata_pelajaran_id)
                                   ->where('tanggal', $tanggal)
+                                  ->whereIn('siswa_id', $siswaIds) // Hanya siswa di kelas ini
                                   ->with('siswa:id,nama_lengkap,nis')
                                   ->get();
             
@@ -629,6 +913,25 @@ class AbsensiController extends Controller
                                        ->select('id', 'nama_lengkap', 'nis')
                                        ->get();
             
+            // Ambil detail siswa berdasarkan status untuk kepala tata usaha dan tata usaha
+            $siswaByStatus = [
+                'hadir' => [],
+                'sakit' => [],
+                'izin' => [],
+                'alpha' => []
+            ];
+            
+            foreach ($absensiData as $absensi) {
+                $siswaByStatus[$absensi->status][] = [
+                    'id' => $absensi->siswa->id,
+                    'nama_lengkap' => $absensi->siswa->nama_lengkap,
+                    'nis' => $absensi->siswa->nis,
+                    'jam_masuk' => $absensi->jam_masuk ? $absensi->jam_masuk->format('H:i') : null,
+                    'jam_keluar' => $absensi->jam_keluar ? $absensi->jam_keluar->format('H:i') : null,
+                    'keterangan' => $absensi->keterangan
+                ];
+            }
+            
             return [
                 'jadwal_id' => $jadwal->id,
                 'mata_pelajaran' => $jadwal->mataPelajaran->nama_mapel ?? 'N/A',
@@ -638,7 +941,8 @@ class AbsensiController extends Controller
                 'hari' => $jadwal->hari,
                 'statistik' => $absensiStats,
                 'siswa_belum_absen' => $siswaYangBelumAbsen,
-                'last_input' => $absensiData->max('updated_at')?->format('H:i:s'),
+                'siswa_by_status' => $siswaByStatus,
+                'last_input' => $absensiData->max('updated_at')?->setTimezone('Asia/Jakarta')?->format('H:i:s'),
                 'persentase_kehadiran' => $totalSiswa > 0 ? round(($absensiStats['hadir'] / $totalSiswa) * 100, 1) : 0
             ];
         });
