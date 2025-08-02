@@ -10,7 +10,7 @@
                         Halaman {{ getCurrentPage() }} dari {{ getLastPage() }}
                     </span>
                     <span class="text-gray-500">
-                        {{ from || 0 }}-{{ to || 0 }} dari {{ total || 0 }}
+                        {{ getDisplayFrom() }}-{{ getDisplayTo() }} dari {{ getDisplayTotal() }}
                     </span>
                 </div>
                 
@@ -64,13 +64,13 @@
         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
                 <p class="text-sm text-gray-700">
-                    Showing
-                    <span class="font-medium">{{ from }}</span>
-                    to
-                    <span class="font-medium">{{ to }}</span>
-                    of
-                    <span class="font-medium">{{ total }}</span>
-                    results
+                    Menampilkan
+                    <span class="font-medium">{{ getDisplayFrom() }}</span>
+                    sampai
+                    <span class="font-medium">{{ getDisplayTo() }}</span>
+                    dari
+                    <span class="font-medium">{{ getDisplayTotal() }}</span>
+                    hasil
                 </p>
             </div>
             <div>
@@ -185,6 +185,21 @@ const getPageNumbers = () => {
     const lastPage = getLastPage()
     if (lastPage <= 1) return [1]
     return Array.from({ length: lastPage }, (_, i) => i + 1)
+}
+
+// Helper functions untuk menampilkan angka yang benar
+const getDisplayFrom = () => {
+    if (!props.total || props.total === 0) return 0
+    return props.from || 1
+}
+
+const getDisplayTo = () => {
+    if (!props.total || props.total === 0) return 0
+    return props.to || props.total || 0
+}
+
+const getDisplayTotal = () => {
+    return props.total || 0
 }
 
 const jumpToPage = (event) => {

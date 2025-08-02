@@ -4,43 +4,46 @@
     <AppLayout page-title="Detail Wali Kelas">
         <div class="space-y-6">
             <!-- Header -->
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Detail Wali Kelas</h1>
                     <p class="text-gray-600">Informasi lengkap wali kelas</p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                     <Link :href="route('wali-kelas.index')" 
-                          class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                          class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                         <span>Kembali</span>
                     </Link>
                     <button @click="openAssignModal" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors">
+                        <svg v-if="kelas.wali_kelas" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
-                        <span>Ubah Wali Kelas</span>
+                        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        <span>{{ kelas.wali_kelas ? 'Ubah Wali Kelas' : 'Tambah Wali Kelas' }}</span>
                     </button>
                 </div>
             </div>
 
             <!-- Profile Card -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-8">
-                    <div class="flex items-center space-x-6">
-                        <div class="flex-shrink-0">
-                            <div class="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-lg">
-                                <span class="text-2xl font-bold text-indigo-600">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-4 sm:px-6 py-6 sm:py-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                        <div class="flex-shrink-0 flex justify-center sm:justify-start">
+                            <div class="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white flex items-center justify-center shadow-lg">
+                                <span class="text-xl sm:text-2xl font-bold text-green-600">
                                     {{ kelas.nama_kelas.charAt(0).toUpperCase() }}
                                 </span>
                             </div>
                         </div>
-                        <div class="text-white">
-                            <h2 class="text-3xl font-bold">{{ kelas.nama_kelas }}</h2>
-                            <p class="text-xl opacity-90">{{ kelas.tingkat }} {{ kelas.jurusan }}</p>
+                        <div class="text-white text-center sm:text-left">
+                            <h2 class="text-2xl sm:text-3xl font-bold">{{ kelas.nama_kelas }}</h2>
+                            <p class="text-lg sm:text-xl opacity-90">{{ kelas.tingkat }} {{ kelas.jurusan }}</p>
                             <div class="mt-2">
                                 <span v-if="kelas.wali_kelas" class="inline-flex px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm font-medium">
                                     Wali Kelas: {{ kelas.wali_kelas.nama_lengkap || kelas.wali_kelas.name || 'Nama tidak tersedia' }}
@@ -53,33 +56,33 @@
                     </div>
                 </div>
 
-                <div class="px-6 py-6">
+                <div class="px-4 sm:px-6 py-6">
                     <!-- Informasi Kelas -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
                         <div class="space-y-4">
                             <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                                 Informasi Kelas
                             </h3>
                             <div class="space-y-3">
-                                <div class="flex justify-between">
+                                <div class="flex flex-col sm:flex-row sm:justify-between">
                                     <span class="text-gray-600">Nama Kelas:</span>
-                                    <span class="font-medium text-gray-900">{{ kelas.nama_kelas }}</span>
+                                    <span class="font-medium text-gray-900 sm:text-right">{{ kelas.nama_kelas }}</span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex flex-col sm:flex-row sm:justify-between">
                                     <span class="text-gray-600">Tingkat:</span>
-                                    <span class="font-medium text-gray-900">{{ kelas.tingkat }}</span>
+                                    <span class="font-medium text-gray-900 sm:text-right">{{ kelas.tingkat }}</span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex flex-col sm:flex-row sm:justify-between">
                                     <span class="text-gray-600">Jurusan:</span>
-                                    <span class="font-medium text-gray-900">{{ kelas.jurusan || '-' }}</span>
+                                    <span class="font-medium text-gray-900 sm:text-right">{{ kelas.jurusan || '-' }}</span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex flex-col sm:flex-row sm:justify-between">
                                     <span class="text-gray-600">Kapasitas:</span>
-                                    <span class="font-medium text-gray-900">{{ kelas.kapasitas || '-' }} siswa</span>
+                                    <span class="font-medium text-gray-900 sm:text-right">{{ kelas.kapasitas || '-' }} siswa</span>
                                 </div>
-                                <div class="flex justify-between">
+                                <div class="flex flex-col sm:flex-row sm:justify-between">
                                     <span class="text-gray-600">Ruang Kelas:</span>
-                                    <span class="font-medium text-gray-900">{{ kelas.ruang_kelas || '-' }}</span>
+                                    <span class="font-medium text-gray-900 sm:text-right">{{ kelas.ruang_kelas || '-' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -88,26 +91,26 @@
                             <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                                 Informasi Wali Kelas
                             </h3>
-                            <div v-if="kelas.wali_kelas" class="bg-indigo-50 p-4 rounded-lg">
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex-shrink-0">
-                                        <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                                            <span class="text-lg font-medium text-indigo-600">
+                            <div v-if="kelas.wali_kelas" class="bg-green-50 p-4 rounded-lg">
+                                <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                                    <div class="flex-shrink-0 flex justify-center sm:justify-start">
+                                        <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                                            <span class="text-lg font-medium text-green-600">
                                                 {{ (kelas.wali_kelas.nama_lengkap || kelas.wali_kelas.name || 'G').charAt(0).toUpperCase() }}
                                             </span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <p class="font-medium text-indigo-900">{{ kelas.wali_kelas.nama_lengkap || kelas.wali_kelas.name || 'Nama tidak tersedia' }}</p>
-                                        <p class="text-sm text-indigo-600">NIP: {{ kelas.wali_kelas.nip || '-' }}</p>
-                                        <p class="text-sm text-indigo-600">{{ kelas.wali_kelas.email || '-' }}</p>
-                                        <p class="text-sm text-indigo-600">{{ kelas.wali_kelas.no_telepon || '-' }}</p>
+                                    <div class="text-center sm:text-left">
+                                        <p class="font-medium text-green-900">{{ kelas.wali_kelas.nama_lengkap || kelas.wali_kelas.name || 'Nama tidak tersedia' }}</p>
+                                        <p class="text-sm text-green-600">NIP: {{ kelas.wali_kelas.nip || '-' }}</p>
+                                        <p class="text-sm text-green-600 break-all">{{ kelas.wali_kelas.email || '-' }}</p>
+                                        <p class="text-sm text-green-600">{{ kelas.wali_kelas.no_telepon || '-' }}</p>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="bg-yellow-50 p-4 rounded-lg">
-                                <div class="flex items-center space-x-3">
-                                    <svg class="h-8 w-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 text-center sm:text-left">
+                                    <svg class="h-8 w-8 text-yellow-400 mx-auto sm:mx-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                                     </svg>
                                     <div>
@@ -124,28 +127,28 @@
                         <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                             Statistik Kelas
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                            <div class="bg-blue-50 p-3 sm:p-4 rounded-lg">
                                 <div class="text-sm text-blue-600 font-medium">Total Siswa</div>
-                                <div class="text-2xl font-bold text-blue-900">{{ siswa?.length || 0 }}</div>
+                                <div class="text-xl sm:text-2xl font-bold text-blue-900">{{ siswa?.length || 0 }}</div>
                                 <div class="text-xs text-blue-600">dari {{ kelas.kapasitas || '∞' }} kapasitas</div>
                             </div>
-                            <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="bg-green-50 p-3 sm:p-4 rounded-lg">
                                 <div class="text-sm text-green-600 font-medium">Siswa Aktif</div>
-                                <div class="text-2xl font-bold text-green-900">
-                                    {{ siswa?.filter(s => s.status === 'aktif').length || 0 }}
+                                <div class="text-xl sm:text-2xl font-bold text-green-900">
+                                    {{ totalSiswaAktif }}
                                 </div>
                             </div>
-                            <div class="bg-purple-50 p-4 rounded-lg">
+                            <div class="bg-purple-50 p-3 sm:p-4 rounded-lg">
                                 <div class="text-sm text-purple-600 font-medium">Laki-laki</div>
-                                <div class="text-2xl font-bold text-purple-900">
-                                    {{ siswa?.filter(s => s.jenis_kelamin === 'Laki-laki' || s.jenis_kelamin === 'L').length || 0 }}
+                                <div class="text-xl sm:text-2xl font-bold text-purple-900">
+                                    {{ totalSiswaLakiLaki }}
                                 </div>
                             </div>
-                            <div class="bg-pink-50 p-4 rounded-lg">
+                            <div class="bg-pink-50 p-3 sm:p-4 rounded-lg">
                                 <div class="text-sm text-pink-600 font-medium">Perempuan</div>
-                                <div class="text-2xl font-bold text-pink-900">
-                                    {{ siswa?.filter(s => s.jenis_kelamin === 'Perempuan' || s.jenis_kelamin === 'P').length || 0 }}
+                                <div class="text-xl sm:text-2xl font-bold text-pink-900">
+                                    {{ totalSiswaPerempuan }}
                                 </div>
                             </div>
                         </div>
@@ -158,7 +161,8 @@
                         </h3>
                         
                         <div v-if="siswa?.length > 0" class="bg-gray-50 rounded-lg overflow-hidden">
-                            <div class="overflow-x-auto">
+                            <!-- Desktop Table -->
+                            <div class="hidden lg:block overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-100">
                                         <tr>
@@ -186,6 +190,61 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- Mobile Card View -->
+                            <div class="lg:hidden">
+                                <!-- Info jumlah siswa untuk mobile -->
+                                <div class="p-3 bg-gray-100 border-b border-gray-200">
+                                    <div class="text-center">
+                                        <span class="text-xs text-gray-600">
+                                            {{ siswa.length }} siswa di kelas {{ kelas.nama_kelas }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div v-for="(siswaItem, index) in siswa" :key="siswaItem.id" class="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-start space-x-3">
+                                        <!-- Avatar Number -->
+                                        <div class="flex-shrink-0">
+                                            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                                <span class="text-sm font-medium text-green-600">
+                                                    {{ index + 1 }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Content -->
+                                        <div class="flex-1 min-w-0">
+                                            <!-- Header Info -->
+                                            <div class="mb-2">
+                                                <h4 class="text-sm font-medium text-gray-900 leading-tight">
+                                                    {{ siswaItem.nama_lengkap }}
+                                                </h4>
+                                                <p class="text-xs text-gray-500 mt-1">
+                                                    NIS: {{ siswaItem.nis }}
+                                                </p>
+                                            </div>
+                                            
+                                            <!-- Info Grid -->
+                                            <div class="space-y-2 text-xs">
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-600">Jenis Kelamin:</span>
+                                                    <span class="text-gray-900 mt-0.5">{{ getGenderDisplay(siswaItem.jenis_kelamin) }}</span>
+                                                </div>
+                                                
+                                                <div class="flex flex-col">
+                                                    <span class="font-medium text-gray-600">Status:</span>
+                                                    <div class="mt-1">
+                                                        <span :class="getStatusClass(siswaItem.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                                                            {{ getStatusText(siswaItem.status) }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div v-else class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
@@ -205,18 +264,18 @@
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeAssignModal"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full mx-4">
                     <form @submit.prevent="assignWaliKelas">
                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                                 {{ kelas.wali_kelas ? 'Ubah' : 'Tugaskan' }} Wali Kelas untuk {{ kelas.nama_kelas }}
                             </h3>
                             <div>
-                                <label for="wali_kelas_id" class="block text-sm font-medium text-gray-700">Pilih Guru</label>
+                                <label for="wali_kelas_id" class="block text-sm font-medium text-gray-700 mb-2">Pilih Guru</label>
                                 <select
                                     id="wali_kelas_id"
                                     v-model="assignForm.wali_kelas_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                                     required
                                 >
                                     <option value="">Pilih Guru</option>
@@ -230,14 +289,14 @@
                             <button
                                 type="submit"
                                 :disabled="!assignForm.wali_kelas_id"
-                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 transition-colors"
                             >
                                 {{ kelas.wali_kelas ? 'Ubah' : 'Tugaskan' }}
                             </button>
                             <button
                                 type="button"
                                 @click="closeAssignModal"
-                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
                             >
                                 Batal
                             </button>
@@ -251,7 +310,7 @@
 
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
@@ -269,6 +328,28 @@ const props = defineProps({
 const showAssignModal = ref(false)
 const assignForm = ref({
     wali_kelas_id: props.kelas.wali_kelas?.id || ''
+})
+
+// Computed properties untuk statistik
+const totalSiswaLakiLaki = computed(() => {
+    if (!props.siswa || !Array.isArray(props.siswa)) return 0
+    return props.siswa.filter(s => {
+        const gender = s.jenis_kelamin?.toString().toLowerCase()
+        return gender === 'l' || gender === 'laki-laki' || gender === 'laki laki'
+    }).length
+})
+
+const totalSiswaPerempuan = computed(() => {
+    if (!props.siswa || !Array.isArray(props.siswa)) return 0
+    return props.siswa.filter(s => {
+        const gender = s.jenis_kelamin?.toString().toLowerCase()
+        return gender === 'p' || gender === 'perempuan'
+    }).length
+})
+
+const totalSiswaAktif = computed(() => {
+    if (!props.siswa || !Array.isArray(props.siswa)) return 0
+    return props.siswa.filter(s => s.status === 'aktif').length
 })
 
 const getStatusText = (status) => {
@@ -292,12 +373,15 @@ const getStatusClass = (status) => {
 }
 
 const getGenderDisplay = (jenis_kelamin) => {
-    if (jenis_kelamin === 'L' || jenis_kelamin === 'Laki-laki') {
+    if (!jenis_kelamin) return '-'
+    
+    const gender = jenis_kelamin.toString().toLowerCase()
+    if (gender === 'l' || gender === 'laki-laki' || gender === 'laki laki') {
         return 'Laki-laki'
-    } else if (jenis_kelamin === 'P' || jenis_kelamin === 'Perempuan') {
+    } else if (gender === 'p' || gender === 'perempuan') {
         return 'Perempuan'
     }
-    return jenis_kelamin || '-'
+    return jenis_kelamin
 }
 
 const openAssignModal = () => {

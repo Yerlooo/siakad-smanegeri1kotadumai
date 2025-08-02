@@ -45,4 +45,16 @@ class JadwalPelajaran extends Model
     {
         return $this->belongsTo(User::class, 'guru_id');
     }
+
+    public function absensi()
+    {
+        return $this->hasMany(Absensi::class, 'mata_pelajaran_id', 'mata_pelajaran_id');
+    }
+
+    // Relationship untuk absensi berdasarkan tanggal tertentu
+    public function absensiHariIni()
+    {
+        return $this->hasMany(Absensi::class, 'mata_pelajaran_id', 'mata_pelajaran_id')
+                    ->whereDate('tanggal', today());
+    }
 }

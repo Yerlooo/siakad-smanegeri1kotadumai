@@ -275,7 +275,7 @@
                     </div>
 
                     <div v-for="item in filteredGuru" :key="item.id" class="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors">
-                        <div class="flex items-start space-x-3">
+                        <div class="flex space-x-3">
                             <!-- Avatar -->
                             <div class="flex-shrink-0">
                                 <img v-if="item.foto" 
@@ -290,88 +290,85 @@
                                 </div>
                             </div>
                             
-                            <!-- Content -->
+                            <!-- Main Content -->
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1 pr-2">
-                                        <h3 class="text-sm font-medium text-gray-900 leading-tight">
-                                            {{ item.name }}
-                                        </h3>
-                                        <p class="text-xs text-gray-500 mt-1 break-all">
-                                            {{ item.email }}
-                                        </p>
-                                        
-                                        <!-- Info Grid -->
-                                        <div class="mt-2 space-y-2 text-xs">
-                                            <!-- Row 1: NIP dan Role -->
-                                            <div class="grid grid-cols-2 gap-3">
-                                                <div class="flex flex-col">
-                                                    <span class="font-medium text-gray-600">NIP:</span>
-                                                    <span class="text-gray-900 mt-0.5">{{ item.nip || '-' }}</span>
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="font-medium text-gray-600">Role:</span>
-                                                    <span class="mt-0.5">
-                                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                                              :class="getRoleBadgeClass(item.role?.name)">
-                                                            {{ item.role?.display_name }}
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Row 2: No Telepon (jika ada) -->
-                                            <div v-if="item.no_telepon" class="flex flex-col">
-                                                <span class="font-medium text-gray-600">No. Telepon:</span>
-                                                <span class="text-gray-900 mt-0.5">{{ item.no_telepon }}</span>
-                                            </div>
-                                            
-                                            <!-- Row 3: Alamat (jika ada) -->
-                                            <div v-if="item.alamat" class="flex flex-col">
-                                                <span class="font-medium text-gray-600">Alamat:</span>
-                                                <span class="text-gray-900 mt-0.5 break-all">{{ item.alamat }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Status Badge -->
-                                        <div class="mt-3 flex items-center justify-between">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                Aktif
+                                <!-- Header Info -->
+                                <div class="mb-3">
+                                    <h3 class="text-sm font-medium text-gray-900 leading-tight">
+                                        {{ item.name }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-1 break-all">
+                                        {{ item.email }}
+                                    </p>
+                                </div>
+                                
+                                <!-- Info Grid -->
+                                <div class="space-y-2 text-xs">
+                                    <!-- NIP -->
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-600">NIP:</span>
+                                        <span class="text-gray-900 mt-0.5 break-all">{{ item.nip || '-' }}</span>
+                                    </div>
+                                    
+                                    <!-- Role -->
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-600">Role:</span>
+                                        <div class="mt-1">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                                  :class="getRoleBadgeClass(item.role?.name)">
+                                                {{ item.role?.display_name }}
                                             </span>
                                         </div>
                                     </div>
                                     
-                                    <!-- Action Menu -->
-                                    <div class="flex-shrink-0">
-                                        <div class="flex flex-col items-center space-y-1">
-                                            <Link :href="route('guru.show', item.id)"
-                                                  class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
-                                                  title="Lihat Detail">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                            </Link>
-                                            <Link v-if="permissions && permissions.canEdit" :href="route('guru.edit', item.id)"
-                                                  class="p-2 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded-full transition-colors"
-                                                  title="Edit">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                            </Link>
-                                            <button v-if="permissions && permissions.canDelete" @click="confirmDelete(item)"
-                                                    class="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-colors"
-                                                    title="Hapus">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                            
-                                            <!-- Info untuk guru yang tidak bisa edit/hapus -->
-                                            <div v-if="permissions && !permissions.canEdit && !permissions.canDelete" 
-                                                 class="text-gray-400 text-xs italic text-center px-1 py-1">
-                                                Baca Saja
-                                            </div>
+                                    <!-- No Telepon (jika ada) -->
+                                    <div v-if="item.no_telepon" class="flex flex-col">
+                                        <span class="font-medium text-gray-600">No. Telepon:</span>
+                                        <span class="text-gray-900 mt-0.5">{{ item.no_telepon }}</span>
+                                    </div>
+                                    
+                                    <!-- Alamat (jika ada) -->
+                                    <div v-if="item.alamat" class="flex flex-col">
+                                        <span class="font-medium text-gray-600">Alamat:</span>
+                                        <span class="text-gray-900 mt-0.5 break-all">{{ item.alamat }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status dan Action Row -->
+                                <div class="mt-3 flex items-center justify-between">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        Aktif
+                                    </span>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="flex items-center space-x-1">
+                                        <Link :href="route('guru.show', item.id)"
+                                              class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
+                                              title="Lihat Detail">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </Link>
+                                        <Link v-if="permissions && permissions.canEdit" :href="route('guru.edit', item.id)"
+                                              class="p-2 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded-full transition-colors"
+                                              title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </Link>
+                                        <button v-if="permissions && permissions.canDelete" @click="confirmDelete(item)"
+                                                class="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-colors"
+                                                title="Hapus">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                        
+                                        <!-- Info untuk guru yang tidak bisa edit/hapus -->
+                                        <div v-if="permissions && !permissions.canEdit && !permissions.canDelete" 
+                                             class="text-gray-400 text-xs italic text-center px-2 py-1">
+                                            Baca Saja
                                         </div>
                                     </div>
                                 </div>
@@ -382,7 +379,12 @@
 
                 <!-- Pagination -->
                 <div v-if="guru.data.length > 0" class="bg-white px-3 py-3 border-t border-gray-200 sm:px-6">
-                    <Pagination :links="guru.links" />
+                    <Pagination 
+                        :links="guru.links" 
+                        :from="guru.from" 
+                        :to="guru.to" 
+                        :total="guru.total"
+                    />
                 </div>
 
                 <!-- Empty State -->

@@ -156,6 +156,14 @@
                                           class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                         {{ kelasItem.jurusan }}
                                     </span>
+                                    <span v-if="getProgressPercentage(kelasItem) >= 100" 
+                                          class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        🚫 PENUH
+                                    </span>
+                                    <span v-else-if="getProgressPercentage(kelasItem) >= 76" 
+                                          class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                        ⚠️ HAMPIR PENUH
+                                    </span>
                                 </div>
                             </div>
                             <div class="text-xl sm:text-2xl flex-shrink-0 ml-2">🏫</div>
@@ -189,14 +197,23 @@
 
                         <!-- Progress Bar -->
                         <div class="mb-4">
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Terisi</span>
+                            <div class="flex justify-between text-xs mb-1"
+                                 :class="getProgressTextColor(kelasItem)">
+                                <span>{{ getProgressLabel(kelasItem) }}</span>
                                 <span>{{ Math.round((kelasItem.siswa_count / kelasItem.kapasitas) * 100) }}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                <div class="h-2 rounded-full transition-all duration-300" 
+                                     :class="getProgressBarColor(kelasItem)"
                                      :style="{ width: Math.min((kelasItem.siswa_count / kelasItem.kapasitas) * 100, 100) + '%' }">
                                 </div>
+                            </div>
+                            <div class="mt-1 text-xs flex items-center"
+                                 :class="getProgressTextColor(kelasItem)">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path :d="getProgressIcon(kelasItem)"></path>
+                                </svg>
+                                {{ getProgressDescription(kelasItem) }}
                             </div>
                         </div>
 
@@ -229,7 +246,12 @@
 
             <!-- Pagination -->
             <div v-if="kelas.data.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <Pagination :links="kelas.links" />
+                <Pagination 
+                    :links="kelas.links" 
+                    :from="kelas.from" 
+                    :to="kelas.to" 
+                    :total="kelas.total"
+                />
             </div>
 
             <!-- Empty State -->
@@ -299,6 +321,73 @@ const avgSiswaPerKelas = computed(() => {
     if (filteredKelas.value.length === 0) return 0
     return Math.round(totalSiswaAllKelas.value / filteredKelas.value.length)
 })
+
+// Helper functions untuk progress bar
+const getProgressPercentage = (kelas) => {
+    return Math.round((kelas.siswa_count / kelas.kapasitas) * 100)
+}
+
+const getProgressBarColor = (kelas) => {
+    const percentage = getProgressPercentage(kelas)
+    if (percentage >= 100) return 'bg-red-500'        // 100% - Penuh
+    if (percentage >= 76) return 'bg-orange-500'      // 76-99% - Hampir penuh
+    if (percentage >= 51) return 'bg-yellow-500'      // 51-75% - Sedang
+    if (percentage >= 26) return 'bg-blue-500'        // 26-50% - Cukup
+    return 'bg-green-500'                             // 0-25% - Kosong/Sedikit
+}
+
+const getProgressTextColor = (kelas) => {
+    const percentage = getProgressPercentage(kelas)
+    if (percentage >= 100) return 'text-red-600'
+    if (percentage >= 76) return 'text-orange-600'
+    if (percentage >= 51) return 'text-yellow-600'
+    if (percentage >= 26) return 'text-blue-600'
+    return 'text-green-600'
+}
+
+const getProgressLabel = (kelas) => {
+    const percentage = getProgressPercentage(kelas)
+    if (percentage >= 100) return 'Kelas Penuh'
+    if (percentage >= 76) return 'Hampir Penuh'
+    if (percentage >= 51) return 'Sedang Terisi'
+    if (percentage >= 26) return 'Cukup Terisi'
+    if (percentage > 0) return 'Sedikit Terisi'
+    return 'Kelas Kosong'
+}
+
+const getProgressDescription = (kelas) => {
+    const percentage = getProgressPercentage(kelas)
+    const sisaTempat = kelas.kapasitas - kelas.siswa_count
+    
+    if (percentage >= 100) return 'Tidak bisa menerima siswa baru'
+    if (percentage >= 76) return `Hanya tersisa ${sisaTempat} tempat`
+    if (percentage >= 51) return `Tersisa ${sisaTempat} tempat`
+    if (percentage >= 26) return `Masih ada ${sisaTempat} tempat tersedia`
+    if (percentage > 0) return `Banyak tempat tersedia (${sisaTempat} tempat)`
+    return `Semua tempat masih kosong (${kelas.kapasitas} tempat)`
+}
+
+const getProgressIcon = (kelas) => {
+    const percentage = getProgressPercentage(kelas)
+    if (percentage >= 100) {
+        // Warning/exclamation icon
+        return "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+    }
+    if (percentage >= 76) {
+        // Clock icon (time running out)
+        return "M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V5z"
+    }
+    if (percentage >= 51) {
+        // Half filled circle
+        return "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+    }
+    if (percentage >= 26) {
+        // Info icon
+        return "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+    }
+    // Check/success icon
+    return "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+}
 
 const resetFilters = () => {
     search.value = ''

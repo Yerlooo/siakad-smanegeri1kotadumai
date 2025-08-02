@@ -288,13 +288,31 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Siswa
+                                    <button @click="handleSort('nama_lengkap')" 
+                                            class="flex items-center space-x-1 hover:text-gray-700 transition-colors">
+                                        <span>Siswa</span>
+                                        <svg class="w-4 h-4 transform transition-transform" 
+                                             :class="getSortClass('nama_lengkap')"
+                                             fill="currentColor" 
+                                             viewBox="0 0 20 20">
+                                            <path :d="getSortIcon('nama_lengkap')"></path>
+                                        </svg>
+                                    </button>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     NIS
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Kelas
+                                    <button @click="handleSort('kelas')" 
+                                            class="flex items-center space-x-1 hover:text-gray-700 transition-colors">
+                                        <span>Kelas</span>
+                                        <svg class="w-4 h-4 transform transition-transform" 
+                                             :class="getSortClass('kelas')"
+                                             fill="currentColor" 
+                                             viewBox="0 0 20 20">
+                                            <path :d="getSortIcon('kelas')"></path>
+                                        </svg>
+                                    </button>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Kontak
@@ -388,6 +406,28 @@
                                 <span class="text-gray-500">
                                     Hal {{ siswa.current_page }}/{{ siswa.last_page }}
                                 </span>
+                            </div>
+                            <!-- Mobile Sort Controls -->
+                            <div class="flex items-center justify-between pt-2">
+                                <span class="text-gray-600 font-medium">Urutkan:</span>
+                                <div class="flex space-x-2">
+                                    <button @click="handleSort('nama_lengkap')" 
+                                            class="flex items-center space-x-1 px-2 py-1 rounded text-xs border transition-colors"
+                                            :class="sortBy === 'nama_lengkap' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'">
+                                        <span>Nama</span>
+                                        <svg v-if="sortBy === 'nama_lengkap'" class="w-3 h-3" :class="getSortClass('nama_lengkap')" fill="currentColor" viewBox="0 0 20 20">
+                                            <path :d="getSortIcon('nama_lengkap')"></path>
+                                        </svg>
+                                    </button>
+                                    <button @click="handleSort('kelas')" 
+                                            class="flex items-center space-x-1 px-2 py-1 rounded text-xs border transition-colors"
+                                            :class="sortBy === 'kelas' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'">
+                                        <span>Kelas</span>
+                                        <svg v-if="sortBy === 'kelas'" class="w-3 h-3" :class="getSortClass('kelas')" fill="currentColor" viewBox="0 0 20 20">
+                                            <path :d="getSortIcon('kelas')"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div v-if="siswa.current_page < siswa.last_page" class="w-full">
                                 <div class="w-full bg-gray-200 rounded-full h-1.5">
@@ -580,6 +620,10 @@ const showDeleteModal = ref(false)
 const siswaToDelete = ref(null)
 const showStatistics = ref(true) // Control untuk menampilkan/menyembunyikan statistik detail
 const isSearching = ref(false)
+
+// Sorting state
+const sortBy = ref(props.filters?.sort_by || '')
+const sortDirection = ref(props.filters?.sort_direction || 'asc')
 
 // Debounced search
 let searchTimeout = null
@@ -778,7 +822,41 @@ const resetFilters = () => {
     search.value = ''
     statusFilter.value = ''
     kelasFilter.value = ''
+    sortBy.value = ''
+    sortDirection.value = 'asc'
     applyFilters()
+}
+
+// Fungsi untuk menangani sorting
+const handleSort = (field) => {
+    if (sortBy.value === field) {
+        // Jika sudah sort by field yang sama, toggle direction
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    } else {
+        // Jika field baru, set field dan default ke asc
+        sortBy.value = field
+        sortDirection.value = 'asc'
+    }
+    applyFilters()
+}
+
+// Fungsi untuk mendapatkan ikon sort
+const getSortIcon = (field) => {
+    if (sortBy.value !== field) {
+        return 'M7 10l5 5 5-5H7z' // default sort icon
+    }
+    if (sortDirection.value === 'asc') {
+        return 'M7 14l5-5 5 5H7z' // sort up
+    }
+    return 'M7 10l5 5 5-5H7z' // sort down
+}
+
+// Fungsi untuk mendapatkan class sort indicator
+const getSortClass = (field) => {
+    if (sortBy.value === field) {
+        return sortDirection.value === 'asc' ? 'text-blue-600' : 'text-blue-600'
+    }
+    return 'text-gray-400'
 }
 
 // Fungsi untuk menerapkan filter ke backend
@@ -787,6 +865,8 @@ const applyFilters = () => {
         search: search.value || null,
         status: statusFilter.value || null,
         kelas_id: kelasFilter.value || null,
+        sort_by: sortBy.value || null,
+        sort_direction: sortDirection.value || null,
     }, {
         preserveState: true,
         preserveScroll: true,

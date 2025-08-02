@@ -428,26 +428,26 @@
                   :href="kkmList.prev_page_url"
                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
-                  Previous
+                  Sebelumnya
                 </Link>
                 <Link
                   v-if="kkmList.next_page_url"
                   :href="kkmList.next_page_url"
                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
-                  Next
+                  Selanjutnya
                 </Link>
               </div>
               <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p class="text-sm text-gray-700">
-                    Showing
-                    <span class="font-medium">{{ kkmList.from }}</span>
-                    to
-                    <span class="font-medium">{{ kkmList.to }}</span>
-                    of
-                    <span class="font-medium">{{ kkmList.total }}</span>
-                    results
+                    Menampilkan
+                    <span class="font-medium">{{ kkmList.from || 1 }}</span>
+                    sampai
+                    <span class="font-medium">{{ kkmList.to || kkmList.data?.length || 0 }}</span>
+                    dari
+                    <span class="font-medium">{{ kkmList.total || 0 }}</span>
+                    hasil
                   </p>
                 </div>
                 <div>
@@ -482,7 +482,7 @@
           <div class="bg-white rounded-lg shadow-sm border p-4">
             <div class="text-center mb-4">
               <p class="text-sm text-gray-700">
-                Menampilkan {{ kkmList.from }} - {{ kkmList.to }} dari {{ kkmList.total }} data
+                Menampilkan {{ kkmList.from || 1 }} - {{ kkmList.to || kkmList.data?.length || 0 }} dari {{ kkmList.total || 0 }} data
               </p>
             </div>
             

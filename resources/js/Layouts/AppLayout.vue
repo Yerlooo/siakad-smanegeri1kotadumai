@@ -85,9 +85,18 @@
                     <SidebarLink 
                         v-if="canAccess(['guru', 'kepala_tatausaha'])"
                         :href="route('absensi.index')" 
-                        :active="route().current('absensi.*')"
+                        :active="route().current('absensi.index')"
                         icon="📋">
                         Absensi Siswa
+                    </SidebarLink>
+                    
+                    <!-- Monitoring Absensi (Kepala Tata Usaha & Tata Usaha) -->
+                    <SidebarLink 
+                        v-if="canAccess(['kepala_tatausaha', 'tata_usaha'])"
+                        :href="route('absensi.monitoring')" 
+                        :active="route().current('absensi.monitoring')"
+                        icon="📊">
+                        Monitoring Absensi
                     </SidebarLink>
                     
                     <!-- KKM Management (Guru, Kepala Tata Usaha & Tata Usaha) -->
@@ -179,7 +188,7 @@
         <!-- Main Content -->
         <div class="lg:ml-64">
             <!-- Top Header -->
-            <header class="bg-white shadow-sm border-b border-gray-200">
+            <header class="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
                 <div class="flex items-center justify-between px-4 py-3 sm:py-4">
                     <div class="flex items-center">
                         <!-- Mobile menu button -->

@@ -89,7 +89,8 @@ class AbsensiController extends Controller
             'selectedKelas' => $kelasId,
             'selectedMataPelajaran' => $mataPelajaranId,
             'statusOptions' => Absensi::getStatusOptions(),
-            'isKepalaSekolah' => $user->isKepalaSekolah()
+            'isKepalaSekolah' => $user->isKepalaSekolah(),
+            'isTataUsaha' => $user->role && in_array($user->role->name, ['kepala_tatausaha', 'tata_usaha'])
         ]);
     }
 
@@ -505,5 +506,143 @@ class AbsensiController extends Controller
         return response($html)
             ->header('Content-Type', 'text/html')
             ->header('Content-Disposition', 'inline; filename="rekap-absensi-' . Carbon::create($tahun, $bulan, 1)->format('Y-m') . '.html"');
+    }
+
+    /**
+     * Monitoring real-time absensi untuk Kepala Tata Usaha dan Tata Usaha
+     */
+    public function monitoring(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Hanya kepala tata usaha dan tata usaha yang bisa akses
+        if (!$user->role || !in_array($user->role->name, ['kepala_tatausaha', 'tata_usaha'])) {
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak.');
+        }
+
+        $tanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
+        $kelasId = $request->get('kelas_id');
+        
+        // Ambil semua kelas untuk filter
+        $kelasList = Kelas::select('id', 'nama_kelas', 'tingkat')
+            ->orderBy('tingkat')
+            ->orderBy('nama_kelas')
+            ->get();
+            
+        // Ambil data absensi real-time
+        $monitoringData = $this->getMonitoringData($tanggal, $kelasId);
+
+        return Inertia::render('Absensi/Monitoring', [
+            'monitoringData' => $monitoringData,
+            'kelasList' => $kelasList,
+            'filters' => [
+                'tanggal' => $tanggal,
+                'kelas_id' => $kelasId,
+            ]
+        ]);
+    }
+
+    /**
+     * API endpoint untuk data monitoring real-time
+     */
+    public function monitoringApi(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Hanya kepala tata usaha dan tata usaha yang bisa akses
+        if (!$user->role || !in_array($user->role->name, ['kepala_tatausaha', 'tata_usaha'])) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
+        $tanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
+        $kelasId = $request->get('kelas_id');
+        
+        $monitoringData = $this->getMonitoringData($tanggal, $kelasId);
+        
+        return response()->json([
+            'data' => $monitoringData,
+            'last_updated' => Carbon::now()->format('H:i:s'),
+            'timestamp' => Carbon::now()->timestamp
+        ]);
+    }
+
+    /**
+     * Helper method untuk mengambil data monitoring
+     */
+    private function getMonitoringData($tanggal, $kelasId = null)
+    {
+        // Query dasar untuk jadwal hari ini
+        $jadwalQuery = JadwalPelajaran::with([
+            'mataPelajaran',
+            'kelas',
+            'guru'
+        ])
+        ->whereHas('kelas')
+        ->where('status', true);
+        
+        // Filter berdasarkan hari
+        $hari = Carbon::parse($tanggal)->locale('id')->dayName;
+        $jadwalQuery->where('hari', 'like', '%' . $hari . '%');
+        
+        // Filter berdasarkan kelas jika dipilih
+        if ($kelasId) {
+            $jadwalQuery->where('kelas_id', $kelasId);
+        }
+        
+        $jadwalList = $jadwalQuery->orderBy('jam_mulai')->get();
+        
+        // Proses data untuk monitoring
+        $monitoringData = $jadwalList->map(function($jadwal) use ($tanggal) {
+            // Hitung total siswa di kelas
+            $totalSiswa = Siswa::where('kelas_id', $jadwal->kelas_id)
+                              ->where('status', 'aktif')
+                              ->count();
+            
+            // Ambil data absensi untuk mata pelajaran dan tanggal ini
+            $absensiData = Absensi::where('mata_pelajaran_id', $jadwal->mata_pelajaran_id)
+                                  ->where('tanggal', $tanggal)
+                                  ->with('siswa:id,nama_lengkap,nis')
+                                  ->get();
+            
+            // Hitung statistik absensi
+            $absensiStats = [
+                'total_siswa' => $totalSiswa,
+                'hadir' => 0,
+                'sakit' => 0,
+                'izin' => 0,
+                'alpha' => 0,
+                'belum_absen' => $totalSiswa
+            ];
+            
+            $siswaYangSudahAbsen = [];
+            
+            foreach ($absensiData as $absensi) {
+                $siswaYangSudahAbsen[] = $absensi->siswa_id;
+                $absensiStats[$absensi->status]++;
+                $absensiStats['belum_absen']--;
+            }
+            
+            // Ambil daftar siswa yang belum absen
+            $siswaYangBelumAbsen = Siswa::where('kelas_id', $jadwal->kelas_id)
+                                       ->where('status', 'aktif')
+                                       ->whereNotIn('id', $siswaYangSudahAbsen)
+                                       ->select('id', 'nama_lengkap', 'nis')
+                                       ->get();
+            
+            return [
+                'jadwal_id' => $jadwal->id,
+                'mata_pelajaran' => $jadwal->mataPelajaran->nama_mapel ?? 'N/A',
+                'kelas' => $jadwal->kelas->nama_kelas ?? 'N/A',
+                'guru' => $jadwal->guru->name ?? 'N/A',
+                'jam' => $jadwal->jam_mulai . ' - ' . $jadwal->jam_selesai,
+                'hari' => $jadwal->hari,
+                'statistik' => $absensiStats,
+                'siswa_belum_absen' => $siswaYangBelumAbsen,
+                'last_input' => $absensiData->max('updated_at')?->format('H:i:s'),
+                'persentase_kehadiran' => $totalSiswa > 0 ? round(($absensiStats['hadir'] / $totalSiswa) * 100, 1) : 0
+            ];
+        });
+        
+        return $monitoringData;
     }
 }

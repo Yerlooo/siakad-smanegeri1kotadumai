@@ -134,12 +134,22 @@
                 Rekap Siswa
               </Link>
               <Link 
+                v-if="isTataUsaha || isKepalaSekolah"
+                :href="route('absensi.monitoring')"
+                class="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 font-medium"
+              >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Monitoring Real-Time
+              </Link>
+              <Link 
                 v-if="isKepalaSekolah"
                 :href="route('absensi.laporan')"
                 class="inline-flex items-center justify-center bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 active:bg-purple-800 transition-colors duration-200 font-medium"
               >
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
                 Laporan Absensi
               </Link>
@@ -401,7 +411,8 @@ const props = defineProps({
   selectedKelas: String,
   selectedMataPelajaran: String,
   statusOptions: Object,
-  isKepalaSekolah: Boolean
+  isKepalaSekolah: Boolean,
+  isTataUsaha: Boolean
 })
 
 const processing = ref(false)

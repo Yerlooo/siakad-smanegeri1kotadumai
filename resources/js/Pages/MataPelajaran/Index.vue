@@ -354,7 +354,12 @@
 
                 <!-- Pagination -->
                 <div v-if="mataPelajaran.last_page > 1" class="bg-white px-3 py-3 border-t border-gray-200 sm:px-4">
-                    <Pagination :links="mataPelajaran.links" />
+                    <Pagination 
+                        :links="mataPelajaran.links" 
+                        :from="mataPelajaran.from" 
+                        :to="mataPelajaran.to" 
+                        :total="mataPelajaran.total"
+                    />
                 </div>
             </div>
         </div>
@@ -374,7 +379,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Link, router, usePage, useForm } from '@inertiajs/vue3'
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Pagination from '@/Components/Pagination.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'

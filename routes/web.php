@@ -84,6 +84,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Laporan Absensi (accessible by Kepala Tata Usaha and Tata Usaha)
     Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
         Route::get('/absensi/laporan', [AbsensiController::class, 'laporan'])->name('absensi.laporan');
+        Route::get('/absensi/monitoring', [AbsensiController::class, 'monitoring'])->name('absensi.monitoring');
+        Route::get('/absensi/monitoring/api', [AbsensiController::class, 'monitoringApi'])->name('absensi.monitoring.api');
     });
     
     // KKM Management (accessible by Guru, Kepala Tata Usaha and Tata Usaha)

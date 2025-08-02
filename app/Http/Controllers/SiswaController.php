@@ -51,11 +51,29 @@ class SiswaController extends Controller
             $query->where('kelas_id', $request->kelas_id);
         }
 
+        // Sorting
+        if ($request->filled('sort_by')) {
+            $sortBy = $request->sort_by;
+            $sortDirection = $request->filled('sort_direction') ? $request->sort_direction : 'asc';
+            
+            if ($sortBy === 'nama_lengkap') {
+                $query->orderBy('nama_lengkap', $sortDirection);
+            } elseif ($sortBy === 'kelas') {
+                // Join dengan tabel kelas untuk sorting berdasarkan nama kelas
+                $query->leftJoin('kelas', 'siswa.kelas_id', '=', 'kelas.id')
+                      ->orderBy('kelas.nama_kelas', $sortDirection)
+                      ->select('siswa.*'); // Pastikan hanya kolom siswa yang dipilih
+            }
+        } else {
+            // Default sorting jika tidak ada sort parameter
+            $query->latest();
+        }
+
         // Statistik berdasarkan filter (untuk info hasil filter)
         $filteredTotal = $query->count();
 
         // Execute query dengan pagination
-        $siswa = $query->latest()->paginate(10)->withQueryString();
+        $siswa = $query->paginate(10)->withQueryString();
 
         // Ambil semua kelas untuk filter dropdown
         $allKelas = Kelas::select('id', 'nama_kelas', 'tingkat')
@@ -122,6 +140,8 @@ class SiswaController extends Controller
                 'search' => $request->search,
                 'status' => $request->status,
                 'kelas_id' => $request->kelas_id,
+                'sort_by' => $request->sort_by,
+                'sort_direction' => $request->sort_direction,
             ],
             'canModify' => $this->canModifyData(),
         ]);
@@ -132,7 +152,7 @@ class SiswaController extends Controller
      */
     public function create()
     {
-        $kelas = Kelas::all();
+        $kelas = Kelas::withCount('siswa')->get();
         
         return Inertia::render('Siswa/Create', [
             'kelas' => $kelas
@@ -163,6 +183,18 @@ class SiswaController extends Controller
             'tahun_masuk' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'status' => 'required|in:aktif,lulus,pindah,keluar',
         ]);
+
+        // Validasi kapasitas kelas jika kelas_id dipilih
+        if ($request->filled('kelas_id')) {
+            $kelas = Kelas::findOrFail($request->kelas_id);
+            $currentCount = Siswa::where('kelas_id', $request->kelas_id)->count();
+            
+            if ($currentCount >= $kelas->kapasitas) {
+                return back()->withErrors([
+                    'kelas_id' => "Kelas {$kelas->nama_kelas} sudah penuh. Kapasitas maksimal: {$kelas->kapasitas} siswa, saat ini: {$currentCount} siswa."
+                ])->withInput();
+            }
+        }
 
         // Normalize jenis_kelamin data
         $data = $request->all();
@@ -227,7 +259,7 @@ class SiswaController extends Controller
      */
     public function edit(Siswa $siswa)
     {
-        $kelas = Kelas::all();
+        $kelas = Kelas::withCount('siswa')->get();
         
         // Ensure all nullable fields are strings to prevent Vue warnings
         $siswaData = $siswa->load('kelas');
@@ -273,6 +305,18 @@ class SiswaController extends Controller
             'tahun_masuk' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'status' => 'required|in:aktif,lulus,pindah,keluar',
         ]);
+
+        // Validasi kapasitas kelas jika kelas_id berubah
+        if ($request->filled('kelas_id') && $request->kelas_id != $siswa->kelas_id) {
+            $kelas = Kelas::findOrFail($request->kelas_id);
+            $currentCount = Siswa::where('kelas_id', $request->kelas_id)->count();
+            
+            if ($currentCount >= $kelas->kapasitas) {
+                return back()->withErrors([
+                    'kelas_id' => "Kelas {$kelas->nama_kelas} sudah penuh. Kapasitas maksimal: {$kelas->kapasitas} siswa, saat ini: {$currentCount} siswa."
+                ])->withInput();
+            }
+        }
 
         // Normalize jenis_kelamin data
         $data = $request->all();
