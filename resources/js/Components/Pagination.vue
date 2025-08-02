@@ -1,16 +1,65 @@
 <template>
-    <nav class="flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
-            <Link v-if="links.prev" 
-                  :href="links.prev" 
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Previous
-            </Link>
-            <Link v-if="links.next" 
-                  :href="links.next" 
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Next
-            </Link>
+    <nav v-if="links && links.length > 0" class="flex items-center justify-between">
+        <!-- Mobile pagination dengan layout responsif -->
+        <div class="w-full sm:hidden">
+            <!-- Info pagination mobile -->
+            <div class="flex flex-col space-y-3">
+                <!-- Info halaman dan total -->
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">
+                        Halaman {{ getCurrentPage() }} dari {{ getLastPage() }}
+                    </span>
+                    <span class="text-gray-500">
+                        {{ from || 0 }}-{{ to || 0 }} dari {{ total || 0 }}
+                    </span>
+                </div>
+                
+                <!-- Navigation buttons stack -->
+                <div class="flex flex-col space-y-2">
+                    <!-- Row 1: Previous and Next buttons -->
+                    <div class="flex items-center space-x-2">
+                        <Link v-if="getPrevUrl()" 
+                              :href="getPrevUrl()" 
+                              class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            <span class="truncate">Sebelumnya</span>
+                        </Link>
+                        <div v-else class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-400 bg-gray-50">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            <span class="truncate">Sebelumnya</span>
+                        </div>
+                        
+                        <Link v-if="getNextUrl()" 
+                              :href="getNextUrl()" 
+                              class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <span class="truncate">Selanjutnya</span>
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </Link>
+                        <div v-else class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-400 bg-gray-50">
+                            <span class="truncate">Selanjutnya</span>
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 2: Jump to page (jika diperlukan) -->
+                    <div v-if="getLastPage() > 1" class="flex items-center justify-center space-x-2">
+                        <span class="text-xs text-gray-500 whitespace-nowrap">Lompat ke:</span>
+                        <select @change="jumpToPage" :value="getCurrentPage()" class="text-sm border border-gray-300 rounded px-2 py-1 min-w-0 flex-shrink">
+                            <option v-for="page in getPageNumbers()" :key="page" :value="page">
+                                Hal {{ page }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
@@ -84,13 +133,85 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 const props = defineProps({
-    links: Array,
-    from: Number,
-    to: Number,
-    total: Number
+    links: {
+        type: Array,
+        default: () => []
+    },
+    from: {
+        type: Number,
+        default: 0
+    },
+    to: {
+        type: Number,
+        default: 0
+    },
+    total: {
+        type: Number,
+        default: 0
+    }
 })
+
+// Helper functions untuk mendapatkan informasi pagination
+const getCurrentPage = () => {
+    if (!props.links || props.links.length === 0) return 1
+    const activePage = props.links.find(link => link.active)
+    return activePage ? parseInt(activePage.label) || 1 : 1
+}
+
+const getLastPage = () => {
+    if (!props.links || props.links.length < 3) return 1
+    // Cari link dengan label numerik tertinggi
+    const pageLinks = props.links.filter(link => link.label && !isNaN(parseInt(link.label)))
+    if (pageLinks.length === 0) return 1
+    const lastPageLink = pageLinks[pageLinks.length - 1]
+    return lastPageLink ? parseInt(lastPageLink.label) || 1 : 1
+}
+
+const getPrevUrl = () => {
+    if (!props.links || props.links.length === 0) return null
+    return props.links[0]?.url || null
+}
+
+const getNextUrl = () => {
+    if (!props.links || props.links.length === 0) return null
+    return props.links[props.links.length - 1]?.url || null
+}
+
+const getPageNumbers = () => {
+    const lastPage = getLastPage()
+    if (lastPage <= 1) return [1]
+    return Array.from({ length: lastPage }, (_, i) => i + 1)
+}
+
+const jumpToPage = (event) => {
+    try {
+        const page = parseInt(event.target.value)
+        if (!page || page < 1) return
+        
+        // Jika browser tidak support window object (SSR), skip
+        if (typeof window === 'undefined') return
+        
+        // Dapatkan URL halaman yang dipilih dari links yang ada
+        const targetPageLink = props.links?.find(link => {
+            const pageNumber = parseInt(link.label)
+            return pageNumber === page
+        })
+        
+        if (targetPageLink && targetPageLink.url) {
+            router.get(targetPageLink.url)
+        } else {
+            // Fallback: buat URL dengan parameter page
+            const currentParams = new URLSearchParams(window.location.search)
+            currentParams.set('page', page.toString())
+            const newUrl = window.location.pathname + '?' + currentParams.toString()
+            router.get(newUrl)
+        }
+    } catch (error) {
+        console.error('Error in jumpToPage:', error)
+    }
+}
 </script>

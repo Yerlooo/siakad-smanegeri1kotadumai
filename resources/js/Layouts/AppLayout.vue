@@ -462,12 +462,16 @@ const handleNotificationClick = async (notification) => {
 const fetchNotifications = async () => {
     try {
         // Pastikan user sudah terauthentikasi sebelum fetch
-        if (!page.props.auth.user) {
+        if (!page.props?.auth?.user) {
             console.log('User not authenticated, skipping notifications fetch');
             return;
         }
         
-        // Pastikan route helper tersedia
+        // Pastikan route helper tersedia dan environment browser
+        if (typeof window === 'undefined' || typeof route === 'undefined') {
+            console.log('Not in browser environment or route helper not available');
+            return;
+        }
         if (typeof route !== 'function') {
             console.error('Route helper not available');
             return;

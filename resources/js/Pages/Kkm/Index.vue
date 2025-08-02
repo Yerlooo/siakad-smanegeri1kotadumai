@@ -7,10 +7,44 @@
       </h2>
     </template>
 
-    <div class="py-6">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <!-- Header Section -->
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
+    <div class="py-3 sm:py-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Mobile Header -->
+        <div class="block sm:hidden mb-4">
+          <div class="bg-white rounded-lg shadow-sm border p-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">Data KKM</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Semester {{ semester.charAt(0).toUpperCase() + semester.slice(1) }} - {{ tahunAjaran }}
+            </p>
+            
+            <!-- Mobile Action Buttons -->
+            <div class="flex flex-col gap-2">
+              <button
+                @click="showBulkModal = true"
+                v-if="userRole !== 'guru'"
+                class="flex items-center justify-center px-4 py-3 bg-green-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-green-700 focus:bg-green-700 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Bulk Input KKM
+              </button>
+              
+              <button
+                @click="showFormModal = true"
+                class="flex items-center justify-center px-4 py-3 bg-green-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-green-700 focus:bg-green-700 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Tambah KKM Baru
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Header Section -->
+        <div class="hidden sm:block bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
           <div class="p-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -46,8 +80,57 @@
           </div>
         </div>
 
-        <!-- Filter Section -->
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
+        <!-- Mobile Filter Section -->
+        <div class="block sm:hidden mb-4">
+          <div class="bg-white rounded-lg shadow-sm border p-4">
+            <h4 class="text-md font-medium text-gray-900 mb-3">Filter Data</h4>
+            
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Mata Pelajaran
+                </label>
+                <select
+                  v-model="filters.mata_pelajaran_id"
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base"
+                >
+                  <option value="">Semua Mata Pelajaran</option>
+                  <option v-for="mapel in (mataPelajaranList || [])" :key="mapel.id" :value="mapel.id">
+                    {{ mapel.nama_mapel }}
+                  </option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Kelas
+                </label>
+                <select
+                  v-model="filters.kelas_id"
+                  class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-base"
+                >
+                  <option value="">Semua Kelas</option>
+                  <option v-for="kelas in kelasList" :key="kelas.id" :value="kelas.id">
+                    {{ kelas.nama_kelas }}
+                  </option>
+                </select>
+              </div>
+              
+              <button
+                @click="applyFilters"
+                class="w-full px-4 py-3 bg-green-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-green-700 focus:bg-green-700 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"/>
+                </svg>
+                Terapkan Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Filter Section -->
+        <div class="hidden sm:block bg-white overflow-hidden shadow-xl sm:rounded-lg mb-6">
           <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -92,8 +175,131 @@
           </div>
         </div>
 
-        <!-- Data Table -->
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+        <!-- Mobile Data Cards -->
+        <div class="block sm:hidden space-y-3 mb-6">
+          <!-- Bulk Selection Header for Mobile -->
+          <div v-if="selectedItems.length > 0" class="bg-yellow-50 rounded-lg border border-yellow-200 p-4 mb-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-yellow-800">
+                  {{ selectedItems.length }} item dipilih
+                </span>
+              </div>
+              <button
+                @click="showBulkDeleteModal = true"
+                class="inline-flex items-center px-3 py-2 bg-red-600 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-red-700 focus:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Hapus
+              </button>
+            </div>
+          </div>
+
+          <!-- Select All for Mobile -->
+          <div class="bg-gray-50 rounded-lg p-3 border">
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                v-model="selectAll"
+                @change="toggleSelectAll"
+                class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50"
+              />
+              <span class="ml-2 text-sm font-medium text-gray-700">Pilih Semua</span>
+            </label>
+          </div>
+
+          <!-- Mobile Cards -->
+          <div v-if="kkmList.data.length === 0" class="bg-white rounded-lg shadow-sm border p-6 text-center">
+            <div class="text-gray-500">
+              <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <p class="text-sm text-gray-500">Belum ada data KKM</p>
+            </div>
+          </div>
+
+          <div v-for="(kkm, index) in kkmList.data" :key="kkm.id" 
+               class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200">
+            <div class="p-4">
+              <!-- Card Header -->
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    v-model="selectedItems"
+                    :value="kkm.id"
+                    @change="updateSelectAll"
+                    class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 mr-3"
+                  />
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900 text-sm">
+                      {{ kkm.mata_pelajaran.nama_mapel }}
+                    </h4>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ kkm.mata_pelajaran.kode_mapel }}
+                    </p>
+                  </div>
+                </div>
+                <span class="text-xs text-gray-400 font-medium">
+                  #{{ (kkmList.current_page - 1) * kkmList.per_page + index + 1 }}
+                </span>
+              </div>
+
+              <!-- Card Content -->
+              <div class="space-y-2 mb-4">
+                <div class="flex justify-between items-center py-1">
+                  <span class="text-sm text-gray-600">Kelas:</span>
+                  <span class="text-sm font-medium text-gray-900">
+                    {{ kkm.kelas?.nama_kelas || 'N/A' }}
+                  </span>
+                </div>
+                
+                <div class="flex justify-between items-center py-1">
+                  <span class="text-sm text-gray-600">Nilai KKM:</span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                        :class="getKkmStatusClass(kkm.kkm)">
+                    {{ kkm.kkm }}
+                  </span>
+                </div>
+                
+                <div class="flex justify-between items-center py-1">
+                  <span class="text-sm text-gray-600">Status:</span>
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                        :class="kkm.kkm >= 75 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'">
+                    {{ kkm.kkm >= 75 ? 'Tinggi' : 'Rendah' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card Actions -->
+              <div class="flex gap-2 pt-3 border-t border-gray-100">
+                <button
+                  @click="editKkm(kkm)"
+                  class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-yellow-500 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-yellow-600 focus:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  @click="deleteKkm(kkm)"
+                  class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-500 border border-transparent rounded-lg font-medium text-sm text-white hover:bg-red-600 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Data Table -->
+        <div class="hidden sm:block bg-white overflow-hidden shadow-xl sm:rounded-lg">
           <!-- Bulk Delete Actions -->
           <div v-if="selectedItems.length > 0" class="bg-yellow-50 px-6 py-3 border-b border-yellow-200">
             <div class="flex items-center justify-between">
@@ -213,7 +419,7 @@
             </table>
           </div>
 
-          <!-- Pagination -->
+          <!-- Desktop Pagination -->
           <div v-if="kkmList.data.length > 0" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
             <div class="flex items-center justify-between">
               <div class="flex-1 flex justify-between sm:hidden">
@@ -267,6 +473,41 @@
                   </nav>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Pagination -->
+        <div v-if="kkmList.data.length > 0" class="block sm:hidden mt-6">
+          <div class="bg-white rounded-lg shadow-sm border p-4">
+            <div class="text-center mb-4">
+              <p class="text-sm text-gray-700">
+                Menampilkan {{ kkmList.from }} - {{ kkmList.to }} dari {{ kkmList.total }} data
+              </p>
+            </div>
+            
+            <div class="flex justify-center space-x-2">
+              <Link
+                v-if="kkmList.prev_page_url"
+                :href="kkmList.prev_page_url"
+                class="flex items-center justify-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 focus:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Sebelumnya
+              </Link>
+              
+              <Link
+                v-if="kkmList.next_page_url"
+                :href="kkmList.next_page_url"
+                class="flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-green-700 focus:bg-green-700 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-150 touch-manipulation"
+              >
+                Selanjutnya
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </Link>
             </div>
           </div>
         </div>
@@ -540,15 +781,15 @@
       :title="confirmModalData.title"
       :message="confirmModalData.message"
       :confirm-text="confirmModalData.confirmText"
-      :confirm-color="confirmModalData.confirmColor"
+      :type="confirmModalData.confirmColor === 'red' ? 'danger' : 'primary'"
       @confirm="confirmModalData.onConfirm"
-      @cancel="showConfirmModal = false"
+      @close="showConfirmModal = false"
     />
 
     <!-- Bulk Delete Modal -->
-    <div v-if="showBulkDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="bulk-delete-modal-title" role="dialog" aria-modal="true">
+    <div v-if="showBulkDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="bulk-delete-modal-title" role="dialog" aria-modal="true" @keydown.esc="showBulkDeleteModal = false">
       <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showBulkDeleteModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -584,7 +825,7 @@
             <button
               type="button"
               @click="showBulkDeleteModal = false"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
               Batal
             </button>
@@ -597,7 +838,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { router, Link } from '@inertiajs/vue3'
+import { router, Link, Head } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import NotificationContainer from '@/Components/NotificationContainer.vue'
 import ConfirmModal from '@/Components/ConfirmModal.vue'
@@ -699,7 +940,7 @@ const submitForm = () => {
       showSuccess(`KKM berhasil ${isEditing.value ? 'diperbarui' : 'ditambahkan'}`)
       closeFormModal()
       // Refresh halaman untuk menampilkan data terbaru
-      router.get(route('kkm.index'))
+      router.get('/kkm')
     },
     onError: (errors) => {
       if (typeof errors === 'string') {
@@ -725,7 +966,7 @@ const deleteKkm = (kkm) => {
         showSuccess('KKM berhasil dihapus')
         showConfirmModal.value = false
         // Refresh halaman untuk menampilkan data terbaru
-        router.get(route('kkm.index'))
+        router.get('/kkm')
       },
       onError: (error) => {
         showError(error || 'Gagal menghapus KKM')
@@ -799,7 +1040,7 @@ const submitBulkForm = () => {
       showSuccess('Bulk input KKM berhasil diproses')
       closeBulkModal()
       // Refresh halaman untuk menampilkan data terbaru
-      router.get(route('kkm.index'))
+      router.get('/kkm')
     },
     onError: (error) => {
       showError(error || 'Gagal memproses bulk input KKM')
@@ -826,7 +1067,7 @@ const applyFilters = () => {
   }
   
   const queryString = params.toString()
-  router.get(route('kkm.index') + (queryString ? '?' + queryString : ''))
+  router.get('/kkm' + (queryString ? '?' + queryString : ''))
 }
 
 // Select All functionality
@@ -871,7 +1112,7 @@ const confirmBulkDelete = () => {
       selectedItems.value = []
       selectAll.value = false
       // Refresh halaman untuk menampilkan data terbaru
-      router.get(route('kkm.index'))
+      router.get('/kkm')
     },
     onError: (error) => {
       showError(error.message || 'Gagal menghapus data KKM')
@@ -882,6 +1123,13 @@ const confirmBulkDelete = () => {
       processing.value = false
     }
   })
+}
+
+const closeBulkDeleteModal = () => {
+  console.log('closeBulkDeleteModal dipanggil') // Debug log
+  showBulkDeleteModal.value = false
+  processing.value = false // Reset processing state juga
+  console.log('Modal bulk delete ditutup, showBulkDeleteModal:', showBulkDeleteModal.value) // Debug log
 }
 
 const getKkmStatusClass = (nilai) => {

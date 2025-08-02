@@ -199,7 +199,7 @@ const updateSettings = () => {
             // Reset form errors on success
         },
         onError: (errors) => {
-            console.log('Update errors:', errors)
+            // Handle validation errors
         }
     })
 }

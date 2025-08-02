@@ -642,10 +642,6 @@ const approvalForm = useForm({
 const initializeNilaiSiswa = () => {
     const nilaiSiswa = {}
     
-    // Debug: log data yang tersedia
-    console.log('Kelas data:', props.kelas)
-    console.log('Siswa data:', props.kelas?.siswa)
-    
     if (props.kelas?.siswa && Array.isArray(props.kelas.siswa)) {
         props.kelas.siswa.forEach(siswa => {
             nilaiSiswa[siswa.id] = {
@@ -654,11 +650,8 @@ const initializeNilaiSiswa = () => {
                 keterangan: props.nilaiExisting?.[siswa.id]?.keterangan || ''
             }
         })
-    } else {
-        console.warn('Data siswa tidak tersedia atau bukan array:', props.kelas?.siswa)
     }
     
-    console.log('Initialized nilai siswa:', nilaiSiswa)
     return nilaiSiswa
 }
 
@@ -698,26 +691,18 @@ const validateAndUpdateNilai = (siswaId, event) => {
 
 // If initial data is empty, reinitialize on mount
 onMounted(() => {
-    console.log('Mounted - checking nilai siswa')
-    console.log('Props kelas:', props.kelas)
-    console.log('Props kelas siswa:', props.kelas?.siswa)
-    console.log('Current form nilai_siswa:', form.nilai_siswa)
-    
     // If nilai_siswa is empty or doesn't match current students, reinitialize
     const currentStudentIds = props.kelas?.siswa?.map(s => s.id) || []
     const formStudentIds = Object.keys(form.nilai_siswa).map(id => parseInt(id))
     
     if (Object.keys(form.nilai_siswa).length === 0 || !currentStudentIds.every(id => formStudentIds.includes(id))) {
-        console.log('Reinitializing nilai siswa data...')
         const newNilaiSiswa = initializeNilaiSiswa()
         form.nilai_siswa = newNilaiSiswa
-        console.log('Form nilai_siswa after reinitialization:', form.nilai_siswa)
     }
 })
 
 const filteredSiswa = computed(() => {
     if (!props.kelas?.siswa || !Array.isArray(props.kelas.siswa)) {
-        console.warn('Data siswa tidak tersedia untuk filtering')
         return []
     }
     
@@ -906,7 +891,6 @@ const submitApprovalRequest = () => {
             )
         },
         onError: (errors) => {
-            console.error('Error submitting approval request:', errors)
             showError(
                 'Gagal Mengajukan Permintaan!', 
                 'Terjadi kesalahan saat mengajukan permintaan. Silakan coba lagi.'
@@ -1030,7 +1014,6 @@ const submitNilai = () => {
     form.transform(() => formData)
         .post(route('nilai-siswa.store'), {
             onSuccess: () => {
-                console.log('Nilai berhasil disimpan')
                 const statusText = form.status === 'final' ? 'Final' : 'Draft'
                 showSuccess(
                     `Nilai ${statusText} Berhasil Disimpan!`, 
@@ -1038,7 +1021,6 @@ const submitNilai = () => {
                 )
             },
             onError: (errors) => {
-                console.error('Error:', errors)
                 showError(
                     'Gagal Menyimpan Nilai!', 
                     'Terjadi kesalahan saat menyimpan nilai. Silakan periksa data dan coba lagi.'

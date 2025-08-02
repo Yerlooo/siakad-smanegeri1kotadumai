@@ -300,7 +300,6 @@ const deleteNotification = (notificationId) => {
 }
 
 const deleteAllRead = () => {
-    console.log('Mengirim request hapus semua notifikasi...');
     if (confirm('Apakah Anda yakin ingin menghapus semua notifikasi?')) {
         router.delete(route('notifications.delete-read'), {
             preserveScroll: true,
