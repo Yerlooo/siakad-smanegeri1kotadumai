@@ -45,7 +45,14 @@
                                 </div>
                                 <div>
                                     <span class="font-medium text-blue-800">Periode:</span>
-                                    <span class="ml-2 text-blue-700">{{ formatDate(filters.start_date) }} - {{ formatDate(filters.end_date) }}</span>
+                                    <span class="ml-2 text-blue-700">
+                                        <template v-if="actualPeriod.start || actualPeriod.end">
+                                            {{ actualPeriod.start ? formatDate(actualPeriod.start) : '-' }} s/d {{ actualPeriod.end ? formatDate(actualPeriod.end) : '-' }}
+                                        </template>
+                                        <template v-else>
+                                            -
+                                        </template>
+                                    </span>
                                 </div>
                                 <div>
                                     <span class="font-medium text-blue-800">Frekuensi:</span>
@@ -121,8 +128,38 @@
                         <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-lg font-medium text-gray-900">Rekap Kehadiran Siswa {{ selectedKelas.nama_kelas }}</h3>
-                                    <span class="text-sm text-gray-500">{{ selectedMapel ? selectedMapel.nama_mapel : 'Semua Mata Pelajaran' }}</span>
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">Rekap Kehadiran Siswa {{ selectedKelas.nama_kelas }}</h3>
+                                        <span class="text-sm text-gray-500">{{ selectedMapel ? selectedMapel.nama_mapel : 'Semua Mata Pelajaran' }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <!-- Export Buttons -->
+                                        <button @click="exportToPDF" 
+                                                class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 disabled:opacity-25 transition ease-in-out duration-150"
+                                                :disabled="isExporting">
+                                            <svg v-if="!isExporting" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <svg v-else class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            {{ isExporting ? 'Exporting...' : 'Export PDF' }}
+                                        </button>
+                                        
+                                        <button @click="exportToExcel" 
+                                                class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150"
+                                                :disabled="isExporting">
+                                            <svg v-if="!isExporting" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <svg v-else class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            {{ isExporting ? 'Exporting...' : 'Export Excel' }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -284,31 +321,44 @@ if (props.absensiData && props.absensiData.data) {
     console.log('Grouped by Date:', groupedByDate)
 }
 
-// Setiap record absensi (urut input) adalah satu pertemuan, tanggal kolom mengikuti tanggal input guru
+// Setiap sesi input absensi adalah satu pertemuan, berdasarkan created_at atau session input
 const meetingDates = computed(() => {
     if (!props.absensiData || !props.absensiData.data || props.absensiData.data.length === 0) {
         return []
     }
-    // Ambil semua absensi, urutkan berdasarkan tanggal dan id
+    
+    console.log('Raw absensi data for meetings:', props.absensiData.data)
+    
+    // Untuk menentukan pertemuan berdasarkan session input guru
+    // Kita kelompokkan berdasarkan kombinasi tanggal, created_at, dan batch input
+    const sessionMap = new Map()
+    
+    // Sort berdasarkan created_at untuk mendapatkan urutan input yang benar
     const sorted = [...props.absensiData.data].sort((a, b) => {
-        const dateCompare = new Date(a.tanggal) - new Date(b.tanggal)
-        if (dateCompare !== 0) return dateCompare
-        return (a.id || 0) - (b.id || 0)
+        return new Date(a.created_at) - new Date(b.created_at)
     })
-    // Ambil max 16 pertemuan, setiap pertemuan adalah satu record absensi (global, bukan per siswa)
-    // Untuk header, ambil urutan pertemuan berdasarkan urutan input (max 16)
-    const meetings = []
-    let lastKey = ''
+    
     sorted.forEach(absensi => {
-        // Key unik: tanggal + mapel + jam_pelajaran jika ada
-        const key = absensi.tanggal + (absensi.mata_pelajaran_id || '') + (absensi.jam_pelajaran || '')
-        if (key !== lastKey) {
-            meetings.push({
-                tanggal: absensi.tanggal
+        // Gunakan created_at yang dibulatkan ke menit untuk mengelompokkan session
+        const sessionTime = new Date(absensi.created_at)
+        sessionTime.setSeconds(0, 0) // Bulatkan ke menit
+        const sessionKey = sessionTime.toISOString()
+        
+        if (!sessionMap.has(sessionKey)) {
+            sessionMap.set(sessionKey, {
+                tanggal: absensi.tanggal,
+                created_at: absensi.created_at,
+                sessionTime: sessionKey
             })
-            lastKey = key
         }
     })
+    
+    // Convert ke array dan sort berdasarkan created_at
+    const meetings = Array.from(sessionMap.values()).sort((a, b) => {
+        return new Date(a.created_at) - new Date(b.created_at)
+    })
+    
+    console.log('Meeting sessions found:', meetings)
     return meetings
 })
 
@@ -316,10 +366,14 @@ const meetingDates = computed(() => {
 const studentAttendanceData = computed(() => {
     if (!props.absensiData || !props.absensiData.data || !props.absensiData.data.length) return []
     
-    console.log('Processing absensi data:', props.absensiData.data)
+    console.log('Processing absensi data:', props.absensiData.data.length, 'records')
     
     // Ambil daftar siswa unik dari data absensi
     const studentMap = new Map()
+    
+    // Dapatkan meeting sessions yang sudah ditentukan
+    const meetingSessions = meetingDates.value
+    console.log('Meeting sessions for student data:', meetingSessions)
     
     // Initialize students
     props.absensiData.data.forEach(absensi => {
@@ -332,38 +386,50 @@ const studentAttendanceData = computed(() => {
                 totalHadir: 0,
                 totalPertemuan: 0,
                 percentage: 0,
-                records: []
+                recordsBySession: new Map()
             })
         }
         
-        // Add record to student
-        studentMap.get(absensi.siswa.id).records.push({
+        // Group records by session time untuk setiap siswa
+        const student = studentMap.get(absensi.siswa.id)
+        const sessionTime = new Date(absensi.created_at)
+        sessionTime.setSeconds(0, 0) // Bulatkan ke menit
+        const sessionKey = sessionTime.toISOString()
+        
+        if (!student.recordsBySession.has(sessionKey)) {
+            student.recordsBySession.set(sessionKey, [])
+        }
+        student.recordsBySession.get(sessionKey).push({
             id: absensi.id,
             tanggal: absensi.tanggal,
             status: absensi.status,
-            created_at: absensi.created_at
+            created_at: absensi.created_at,
+            sessionKey: sessionKey
         })
     })
     
-    // Process each student's attendance
+    // Process each student's attendance berdasarkan meeting sessions
     studentMap.forEach(student => {
-        // Sort records by date then by ID to maintain chronological order
-        student.records.sort((a, b) => {
-            const dateCompare = new Date(a.tanggal) - new Date(b.tanggal)
-            if (dateCompare !== 0) return dateCompare
-            return (a.id || 0) - (b.id || 0)
-        })
+        console.log(`Processing student ${student.nama_lengkap}:`)
         
-        console.log(`Student ${student.nama_lengkap} records:`, student.records)
-        
-        // Assign each record to a meeting number sequentially
-        student.records.forEach((record, index) => {
+        // Assign attendance berdasarkan urutan meeting sessions
+        meetingSessions.forEach((session, index) => {
             const pertemuanNumber = index + 1
-            student.attendance[pertemuanNumber] = record.status
-            student.totalPertemuan++
+            const recordsForSession = student.recordsBySession.get(session.sessionTime)
             
-            if (record.status === 'hadir') {
-                student.totalHadir++
+            if (recordsForSession && recordsForSession.length > 0) {
+                // Ambil record terakhir jika ada multiple records di session yang sama
+                const latestRecord = recordsForSession[recordsForSession.length - 1]
+                student.attendance[pertemuanNumber] = latestRecord.status
+                student.totalPertemuan++
+                
+                if (latestRecord.status === 'hadir') {
+                    student.totalHadir++
+                }
+                
+                console.log(`  Pertemuan ${pertemuanNumber} (${session.tanggal}): ${latestRecord.status}`)
+            } else {
+                console.log(`  Pertemuan ${pertemuanNumber} (${session.tanggal}): No record`)
             }
         })
         
@@ -372,7 +438,7 @@ const studentAttendanceData = computed(() => {
             ? Math.round((student.totalHadir / student.totalPertemuan) * 100) 
             : 0
         
-        console.log(`Student ${student.nama_lengkap} final data:`, {
+        console.log(`Final data for ${student.nama_lengkap}:`, {
             totalHadir: student.totalHadir,
             totalPertemuan: student.totalPertemuan,
             percentage: student.percentage,
@@ -380,7 +446,7 @@ const studentAttendanceData = computed(() => {
         })
         
         // Clean up
-        delete student.records
+        delete student.recordsBySession
     })
     
     return Array.from(studentMap.values()).sort((a, b) => a.nama_lengkap.localeCompare(b.nama_lengkap))
@@ -403,7 +469,27 @@ const allMeetingSlots = computed(() => {
     return allSlots
 })
 const completedMeetingsCount = computed(() => {
+    // Hitung berdasarkan jumlah meeting sessions yang benar-benar ada
     return meetingDates.value.length
+})
+
+// Computed untuk periode aktual berdasarkan data absensi
+const actualPeriod = computed(() => {
+    const meetings = meetingDates.value
+    const allSlots = allMeetingSlots.value
+    
+    // Cari tanggal pertemuan 1 dan pertemuan 16
+    const pertemuan1 = allSlots.find(slot => slot.pertemuan === 1)
+    const pertemuan16 = allSlots.find(slot => slot.pertemuan === 16)
+    
+    // Ambil tanggal pertemuan 1 dan 16 (bisa null jika belum ada data)
+    const startDate = pertemuan1?.tanggal || null
+    const endDate = pertemuan16?.tanggal || null
+    
+    return {
+        start: startDate,
+        end: endDate
+    }
 })
 
 const classAverageAttendance = computed(() => {
@@ -417,6 +503,7 @@ const averageAttendance = computed(() => {
 })
 
 const completedMeetings = computed(() => {
+    // Menghitung pertemuan yang benar-benar terlaksana (ada data absensinya)
     return completedMeetingsCount.value
 })
 
@@ -427,6 +514,123 @@ const filterForm = reactive({
     kelas_id: props.filters.kelas_id,
     guru_id: props.filters.guru_id || ''
 })
+
+// State untuk export
+const isExporting = ref(false)
+
+// Fungsi untuk export PDF
+const exportToPDF = async () => {
+    if (isExporting.value) return
+    
+    // Check if there's any meeting data to export
+    if (completedMeetingsCount.value === 0) {
+        alert('Tidak ada data pertemuan untuk di-export.')
+        return
+    }
+    
+    isExporting.value = true
+    
+    try {
+        const params = new URLSearchParams({
+            kelas_id: props.selectedKelas.id,
+            mata_pelajaran_id: props.selectedMapel?.id || '',
+            start_date: actualPeriod.value.start || '',
+            end_date: actualPeriod.value.end || '',
+            format: 'pdf'
+        })
+        
+        // Create a temporary link to download the file
+        const response = await fetch(route('absensi.rekap.export') + '?' + params.toString(), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/pdf',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        
+        if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            
+            // Generate filename
+            const className = props.selectedKelas.nama_kelas.replace(/\s+/g, '_')
+            const mapelName = props.selectedMapel ? props.selectedMapel.nama_mapel.replace(/\s+/g, '_') : 'Semua_Mapel'
+            const currentDate = new Date().toISOString().split('T')[0]
+            link.download = `Rekap_Absensi_${className}_${mapelName}_${currentDate}.pdf`
+            
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        } else {
+            throw new Error('Export failed')
+        }
+    } catch (error) {
+        console.error('Export PDF error:', error)
+        alert('Gagal mengexport PDF. Silakan coba lagi.')
+    } finally {
+        isExporting.value = false
+    }
+}
+
+// Fungsi untuk export Excel
+const exportToExcel = async () => {
+    if (isExporting.value) return
+    
+    // Check if there's any meeting data to export
+    if (completedMeetingsCount.value === 0) {
+        alert('Tidak ada data pertemuan untuk di-export.')
+        return
+    }
+    
+    isExporting.value = true
+    
+    try {
+        const params = new URLSearchParams({
+            kelas_id: props.selectedKelas.id,
+            mata_pelajaran_id: props.selectedMapel?.id || '',
+            start_date: actualPeriod.value.start || '',
+            end_date: actualPeriod.value.end || '',
+            format: 'excel'
+        })
+        
+        // Create a temporary link to download the file
+        const response = await fetch(route('absensi.rekap.export') + '?' + params.toString(), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        
+        if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            
+            // Generate filename
+            const className = props.selectedKelas.nama_kelas.replace(/\s+/g, '_')
+            const mapelName = props.selectedMapel ? props.selectedMapel.nama_mapel.replace(/\s+/g, '_') : 'Semua_Mapel'
+            const currentDate = new Date().toISOString().split('T')[0]
+            link.download = `Rekap_Absensi_${className}_${mapelName}_${currentDate}.xlsx`
+            
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        } else {
+            throw new Error('Export failed')
+        }
+    } catch (error) {
+        console.error('Export Excel error:', error)
+        alert('Gagal mengexport Excel. Silakan coba lagi.')
+    } finally {
+        isExporting.value = false
+    }
+}
 
 // Fungsi untuk apply filter
 const applyFilters = () => {

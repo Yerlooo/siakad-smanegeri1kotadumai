@@ -13,6 +13,7 @@ use App\Http\Controllers\NilaiSayaController;
 use App\Http\Controllers\MuridProfileController;
 use App\Http\Controllers\KkmController;
 use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\AbsensiExportController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\WaliKelasController;
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:guru,kepala_tatausaha,tata_usaha')->group(function () {
         Route::get('/absensi/rekap', [AbsensiController::class, 'rekap'])->name('absensi.rekap');
         Route::get('/absensi/rekap/detail', [AbsensiController::class, 'rekapDetail'])->name('absensi.rekap.detail');
+        Route::get('/absensi/rekap/export', [AbsensiExportController::class, 'export'])->name('absensi.rekap.export');
     });
     
     // Laporan Absensi (accessible by Kepala Tata Usaha and Tata Usaha)
