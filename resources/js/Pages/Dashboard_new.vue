@@ -7,14 +7,14 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold mb-2">
-                        Selamat Datang, {{ page.props.auth.user.name }}!
+                        Selamat Datang, {{ $page.props.auth.user.name }}!
                     </h1>
                     <p class="text-yellow-100">
-                        {{ page.props.auth.user.role?.display_name }} - Sistem Informasi Akademik SMA Negeri 1 Kota Dumai
+                        {{ $page.props.auth.user.role?.display_name }} - Sistem Informasi Akademik SMA Negeri 1 Kota Dumai
                     </p>
                 </div>
                 <div class="text-6xl opacity-80">
-                    {{ getRoleIcon(page.props.auth.user.role?.name) }}
+                    {{ getRoleIcon($page.props.auth.user.role?.name) }}
                 </div>
             </div>
         </div>
@@ -333,12 +333,9 @@
 
 <script setup>
 import { Head } from '@inertiajs/vue3'
-import { usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatCard from '@/Components/StatCard.vue'
 import QuickActionCard from '@/Components/QuickActionCard.vue'
-
-const page = usePage()
 
 defineProps({
     stats: Object,
@@ -350,15 +347,15 @@ defineProps({
 
 // Role helper functions
 function isAdmin() {
-    return ['kepala_tatausaha', 'tata_usaha'].includes(page.props.auth.user.role?.name)
+    return ['kepala_tatausaha', 'tata_usaha'].includes($page.props.auth.user.role?.name)
 }
 
 function isGuru() {
-    return page.props.auth.user.role?.name === 'guru'
+    return $page.props.auth.user.role?.name === 'guru'
 }
 
 function isSiswa() {
-    return ['siswa', 'murid'].includes(page.props.auth.user.role?.name)
+    return ['siswa', 'murid'].includes($page.props.auth.user.role?.name)
 }
 
 function getRoleIcon(roleName) {

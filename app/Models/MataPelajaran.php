@@ -28,6 +28,16 @@ class MataPelajaran extends Model
         return $this->hasMany(JadwalPelajaran::class);
     }
 
+    public function nilaiSiswa()
+    {
+        return $this->hasMany(NilaiSiswa::class);
+    }
+
+    public function kkmMataPelajaran()
+    {
+        return $this->hasMany(KkmMataPelajaran::class);
+    }
+
     // Helper methods
     public function getKategoriLabelAttribute()
     {

@@ -59,9 +59,24 @@ class Siswa extends Model
         return $this->belongsTo(Kelas::class);
     }
 
+    public function nilaiSiswa()
+    {
+        return $this->hasMany(NilaiSiswa::class);
+    }
+
+    public function absensi()
+    {
+        return $this->hasMany(Absensi::class);
+    }
+
     // Helper methods
     public function getUmurAttribute()
     {
         return $this->tanggal_lahir->age;
+    }
+
+    public function getNamaAttribute()
+    {
+        return $this->nama_lengkap;
     }
 }

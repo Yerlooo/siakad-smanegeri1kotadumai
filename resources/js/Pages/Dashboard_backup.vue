@@ -3,18 +3,25 @@
 
     <AppLayout page-title="Dashboard">
         <!-- Welcome Card -->
-        <div class="bg-gradient-to-r from-[#43a047] via-[#aee571] to-[#fbc02d] rounded-lg shadow-lg p-6 text-white mb-6">
+        <div class="bg-gradient-to-r from-[#43a0            <!-- Default Stats -->
+            <template v-else>
+                <StatCard 
+                    title="Total Pengguna" 
+                    :value="stats.total_pengguna" 
+                    icon="👥" 
+                    color="bg-gray-600" 
+                />[#aee571] to-[#fbc02d] rounded-lg shadow-lg p-6 text-white mb-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold mb-2">
-                        Selamat Datang, {{ page.props.auth.user.name }}!
+                        Selamat Datang, {{ $page.props.auth.user.name }}!
                     </h1>
                     <p class="text-yellow-100">
-                        {{ page.props.auth.user.role?.display_name }} - Sistem Informasi Akademik SMA Negeri 1 Kota Dumai
+                        {{ $page.props.auth.user.role?.display_name }} - Sistem Informasi Akademik SMA Negeri 1 Kota Dumai
                     </p>
                 </div>
                 <div class="text-6xl opacity-80">
-                    {{ getRoleIcon(page.props.auth.user.role?.name) }}
+                    {{ getRoleIcon($page.props.auth.user.role?.name) }}
                 </div>
             </div>
         </div>
@@ -120,12 +127,14 @@
                     :value="stats.kelas" 
                     icon="🏫" 
                     color="bg-blue-600"
+                    :is-text="true"
                 />
                 <StatCard 
                     title="Wali Kelas" 
                     :value="stats.wali_kelas" 
                     icon="👨‍🏫" 
                     color="bg-green-600"
+                    :is-text="true"
                 />
                 <StatCard 
                     title="Mata Pelajaran" 
@@ -170,7 +179,7 @@
                 <StatCard 
                     title="Total Pengguna" 
                     :value="stats.total_pengguna" 
-                    icon="👥" 
+                    icon="�" 
                     color="bg-gray-600" 
                 />
                 <StatCard 
@@ -333,12 +342,9 @@
 
 <script setup>
 import { Head } from '@inertiajs/vue3'
-import { usePage } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StatCard from '@/Components/StatCard.vue'
 import QuickActionCard from '@/Components/QuickActionCard.vue'
-
-const page = usePage()
 
 defineProps({
     stats: Object,
@@ -350,15 +356,15 @@ defineProps({
 
 // Role helper functions
 function isAdmin() {
-    return ['kepala_tatausaha', 'tata_usaha'].includes(page.props.auth.user.role?.name)
+    return ['kepala_tatausaha', 'tata_usaha'].includes($page.props.auth.user.role?.name)
 }
 
 function isGuru() {
-    return page.props.auth.user.role?.name === 'guru'
+    return $page.props.auth.user.role?.name === 'guru'
 }
 
 function isSiswa() {
-    return ['siswa', 'murid'].includes(page.props.auth.user.role?.name)
+    return ['siswa', 'murid'].includes($page.props.auth.user.role?.name)
 }
 
 function getRoleIcon(roleName) {
