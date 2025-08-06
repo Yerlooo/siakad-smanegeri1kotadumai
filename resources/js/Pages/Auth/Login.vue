@@ -21,6 +21,57 @@ const form = useForm({
 const showPassword = ref(false);
 const isLoading = ref(false);
 const currentSlide = ref(0);
+const showError = ref(false);
+const errorMessage = ref('');
+const errorTitle = ref('');
+const errorIcon = ref('');
+const currentMessageIndex = ref(0);
+const emailInput = ref(null);
+let messageInterval = null;
+
+// Loading messages
+const loadingMessages = [
+    'Memverifikasi kredensial...',
+    'Mengautentikasi pengguna...',
+    'Memeriksa izin akses...',
+    'Menghubungkan ke server...',
+    'Memuat data pengguna...',
+    'Hampir selesai...'
+];
+
+// Error message categories
+const errorMessages = {
+    email: {
+        title: 'Email Tidak Terdaftar',
+        message: 'Email yang Anda masukkan tidak terdaftar dalam sistem kami. Silakan periksa kembali email Anda atau hubungi administrator.',
+        icon: 'email'
+    },
+    password: {
+        title: 'Password Salah',
+        message: 'Password yang Anda masukkan tidak sesuai. Silakan periksa kembali password Anda.',
+        icon: 'password'
+    },
+    blocked: {
+        title: 'Akun Diblokir',
+        message: 'Akun Anda telah diblokir oleh administrator. Silakan hubungi administrator untuk informasi lebih lanjut.',
+        icon: 'blocked'
+    },
+    server: {
+        title: 'Gangguan Server',
+        message: 'Terjadi gangguan pada server. Silakan coba beberapa saat lagi atau hubungi administrator.',
+        icon: 'server'
+    },
+    network: {
+        title: 'Masalah Koneksi',
+        message: 'Terjadi masalah koneksi jaringan. Periksa koneksi internet Anda dan coba lagi.',
+        icon: 'network'
+    },
+    credentials: {
+        title: 'Login Gagal',
+        message: 'Email atau password yang Anda masukkan salah. Silakan periksa kembali kredensial Anda.',
+        icon: 'credentials'
+    }
+};
 
 const slides = [
     {
@@ -45,12 +96,95 @@ const slides = [
 
 const submit = () => {
     isLoading.value = true;
+    currentMessageIndex.value = 0;
+    
+    // Start loading message rotation
+    messageInterval = setInterval(() => {
+        currentMessageIndex.value = (currentMessageIndex.value + 1) % loadingMessages.length;
+    }, 800);
+    
     form.post(route('login'), {
-        onFinish: () => {
-            form.reset('password');
+        onError: (errors) => {
+            // Stop loading
             isLoading.value = false;
+            if (messageInterval) {
+                clearInterval(messageInterval);
+                messageInterval = null;
+            }
+            
+            // Add form shake animation
+            const formElement = document.querySelector('form');
+            if (formElement) {
+                formElement.classList.add('animate-shake');
+                setTimeout(() => {
+                    formElement.classList.remove('animate-shake');
+                }, 600);
+            }
+            
+            // Show error message
+            showError.value = true;
+            let errorType = 'credentials'; // default
+            
+            if (errors.email) {
+                errorType = 'email';
+            } else if (errors.password) {
+                errorType = 'password';
+            } else if (errors.blocked || errors.account_blocked) {
+                errorType = 'blocked';
+            } else if (errors.server || errors.internal) {
+                errorType = 'server';
+            } else if (errors.network || errors.connection) {
+                errorType = 'network';
+            }
+            
+            const selectedError = errorMessages[errorType];
+            errorTitle.value = selectedError.title;
+            errorMessage.value = selectedError.message;
+            errorIcon.value = selectedError.icon;
+            
+            // Auto hide error after 5 seconds
+            setTimeout(() => {
+                showError.value = false;
+            }, 5000);
+        },
+        onFinish: () => {
+            setTimeout(() => {
+                form.reset('password');
+                isLoading.value = false;
+                if (messageInterval) {
+                    clearInterval(messageInterval);
+                    messageInterval = null;
+                }
+            }, 1500); // Give time for success message
         },
     });
+};
+
+// Error functions
+const closeError = () => {
+    showError.value = false;
+    errorTitle.value = '';
+    errorMessage.value = '';
+    errorIcon.value = '';
+};
+
+const retryLogin = () => {
+    closeError();
+    form.reset();
+    setTimeout(() => emailInput.value?.focus(), 100);
+};
+
+// Helper function to get error icon
+const getErrorIcon = (iconType) => {
+    const iconMap = {
+        'email': '📧',
+        'password': '🔒',
+        'blocked': '🚫',
+        'server': '⚠️',
+        'network': '📡',
+        'credentials': '❌'
+    };
+    return iconMap[iconType] || '⚠️';
 };
 
 const togglePassword = () => {
@@ -110,6 +244,7 @@ onMounted(() => {
                                 id="email"
                                 type="email"
                                 v-model="form.email"
+                                ref="emailInput"
                                 required
                                 autofocus
                                 autocomplete="username"
@@ -118,7 +253,8 @@ onMounted(() => {
                                 placeholder="Masukkan email Anda"
                             />
                         </div>
-                        <InputError class="mt-2" :message="form.errors.email" />
+                        <!-- Hide default error messages -->
+                        <!-- <InputError class="mt-2" :message="form.errors.email" /> -->
                     </div>
 
                     <!-- Password Field -->
@@ -156,7 +292,8 @@ onMounted(() => {
                                 </svg>
                             </button>
                         </div>
-                        <InputError class="mt-2" :message="form.errors.password" />
+                        <!-- Hide default error messages -->
+                        <!-- <InputError class="mt-2" :message="form.errors.password" /> -->
                     </div>
 
                     <!-- Remember Me & Forgot Password -->
@@ -176,10 +313,8 @@ onMounted(() => {
                         <Link
                             v-if="canResetPassword"
                             :href="route('password.request')"
-                            class="text-sm font-medium"
-                            style="color: #43a047; transition: color 0.2s;"
-                            @mouseover="event.target.style.color = '#fbc02d'"
-                            @mouseout="event.target.style.color = '#43a047'"
+                            class="text-sm font-medium hover:text-yellow-500 transition-colors duration-200"
+                            style="color: #43a047;"
                         >
                             Lupa password?
                         </Link>
@@ -212,7 +347,7 @@ onMounted(() => {
                 <!-- Footer -->
                 <div class="mt-8 text-center">
                     <p class="text-xs text-gray-500">
-                        © 2025 SMA Negeri 1 Kota Dumai. All rights reserved.
+                        © 2025 GiovanniFebianP. All rights reserved.
                     </p>
                 </div>
             </div>
@@ -284,5 +419,217 @@ onMounted(() => {
                 </div>
             </div>
         </div>
+        
+        <!-- Loading Overlay -->
+        <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="isLoading" class="fixed inset-0 z-50 flex items-center justify-center">
+                <!-- Backdrop with blur -->
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+                
+                <!-- Loading Card -->
+                <div class="relative bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 mx-4 max-w-sm w-full border border-white/20">
+                    <!-- Animated Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-50/50 to-yellow-50/50 rounded-2xl animate-pulse"></div>
+                    
+                    <!-- Content -->
+                    <div class="relative text-center">
+                        <!-- Loading Spinner -->
+                        <div class="relative mb-6">
+                            <div class="w-16 h-16 mx-auto relative">
+                                <!-- Outer Ring -->
+                                <div class="absolute inset-0 border-4 border-green-200 rounded-full animate-spin border-t-green-600"></div>
+                                <!-- Inner Ring -->
+                                <div class="absolute inset-2 border-4 border-yellow-200 rounded-full animate-spin-reverse border-t-yellow-500"></div>
+                                <!-- Center Dot -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-2 h-2 bg-gradient-to-r from-green-500 to-yellow-500 rounded-full animate-ping"></div>
+                                </div>
+                            </div>
+                            <!-- Glow Effect -->
+                            <div class="absolute inset-0 w-16 h-16 mx-auto bg-green-400/20 rounded-full animate-pulse blur-lg"></div>
+                        </div>
+                        
+                        <!-- Loading Message -->
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Sedang Masuk...</h3>
+                        <p class="text-sm text-gray-600 animate-fade-in">
+                            {{ loadingMessages[currentMessageIndex] }}
+                        </p>
+                        
+                        <!-- Progress Dots -->
+                        <div class="flex justify-center space-x-1 mt-4">
+                            <div v-for="i in 3" :key="i" 
+                                 class="w-2 h-2 bg-green-400 rounded-full animate-bounce"
+                                 :style="{ animationDelay: `${i * 0.2}s` }">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <!-- Error Overlay -->
+        <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+        >
+            <div v-if="showError" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <!-- Backdrop -->
+                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeError"></div>
+                
+                <!-- Error Modal -->
+                <div class="relative bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-md w-full border border-red-100">
+                    <!-- Background Pattern -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-50/50 to-orange-50/50 rounded-2xl"></div>
+                    
+                    <!-- Animated Icon Background -->
+                    <div class="absolute top-4 right-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
+                            <div class="w-6 h-6 bg-red-500 rounded-full animate-ping"></div>
+                        </div>
+                        <!-- Glow Effect -->
+                        <div class="absolute inset-0 w-12 h-12 bg-red-400/20 rounded-full animate-pulse blur-lg"></div>
+                    </div>
+                    
+                    <!-- Error Content -->
+                    <div class="relative text-center">
+                        <div class="mb-6">
+                            <div class="text-6xl mb-4 animate-pulse">
+                                {{ getErrorIcon(errorIcon) }}
+                            </div>
+                            <h3 class="text-xl font-bold text-red-800 mb-2">{{ errorTitle }}</h3>
+                            <p class="text-red-600 text-sm mb-6">{{ errorMessage }}</p>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3 justify-center">
+                            <button
+                                @click="closeError"
+                                class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm transform hover:scale-105"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                @click="retryLogin"
+                                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm transform hover:scale-105"
+                            >
+                                Coba Lagi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
     </div>
 </template>
+
+<style scoped>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+    20%, 40%, 60%, 80% { transform: translateX(10px); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes spin-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+.animate-shake {
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-spin-reverse {
+    animation: spin-reverse 1s linear infinite;
+}
+
+/* Loading dots animation */
+.animate-bounce:nth-child(1) { animation-delay: 0s; }
+.animate-bounce:nth-child(2) { animation-delay: 0.2s; }
+.animate-bounce:nth-child(3) { animation-delay: 0.4s; }
+
+/* Glass morphism effect */
+.backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-md {
+    backdrop-filter: blur(12px);
+}
+
+/* Transition effects */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom gradient backgrounds */
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+/* Error message shake effect */
+form.animate-shake {
+    animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Hover effects */
+.transform:hover {
+    transform: scale(1.05);
+}
+
+/* Focus states */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.1);
+}
+
+/* Loading spinner glow */
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Custom ping animation */
+.animate-ping {
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+</style>

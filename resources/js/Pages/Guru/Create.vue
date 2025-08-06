@@ -1,6 +1,14 @@
 <template>
     <Head title="SIAKAD SMANSA" />
 
+    <!-- Loading Overlay -->
+    <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-700 font-medium">{{ loadingMessage }}</p>
+        </div>
+    </div>
+
     <AppLayout page-title="Tambah Data Guru">
         <div class="max-w-4xl mx-auto">
             <!-- Header -->
@@ -186,14 +194,14 @@
                         </Link>
                         <button 
                             type="submit"
-                            :disabled="form.processing"
+                            :disabled="form.processing || isLoading"
                             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                         >
-                            <svg v-if="form.processing" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg v-if="form.processing || isLoading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span>{{ form.processing ? 'Menyimpan...' : 'Simpan Data' }}</span>
+                            <span>{{ form.processing || isLoading ? 'Menyimpan...' : 'Simpan Data' }}</span>
                         </button>
                     </div>
                 </form>
@@ -205,11 +213,16 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import { ref } from 'vue'
 
 const props = defineProps({
     roles: Array,
     errors: Object
 })
+
+// Loading states
+const isLoading = ref(false)
+const loadingMessage = ref('')
 
 const form = useForm({
     name: '',
@@ -224,11 +237,24 @@ const form = useForm({
     password_confirmation: ''
 })
 
-const submit = () => {
-    form.post(route('guru.store'), {
-        onSuccess: () => {
-            // Success akan dihandle oleh flash message di layout
-        }
-    })
+const submit = async () => {
+    try {
+        isLoading.value = true
+        loadingMessage.value = 'Menyimpan data guru...'
+        
+        form.post(route('guru.store'), {
+            onSuccess: () => {
+                loadingMessage.value = 'Data guru berhasil disimpan!'
+                // Success akan dihandle oleh flash message di layout
+            }
+        })
+    } catch (error) {
+        console.error('Error saving guru:', error)
+    } finally {
+        setTimeout(() => {
+            isLoading.value = false
+            loadingMessage.value = ''
+        }, 1000)
+    }
 }
 </script>

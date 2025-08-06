@@ -71,16 +71,30 @@
                   </select>
                 </div>
                 <div class="flex items-end">
-                  <button 
-                    @click="applyFilters"
-                    class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 flex items-center justify-center font-medium"
-                  >
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                    <span class="hidden sm:inline">Filter</span>
-                    <span class="sm:hidden">Cari</span>
-                  </button>
+                  <div class="grid grid-cols-2 gap-2 w-full">
+                    <button 
+                      @click="applyFilters"
+                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 flex items-center justify-center font-medium"
+                    >
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                      </svg>
+                      <span class="hidden sm:inline">Filter</span>
+                      <span class="sm:hidden">Cari</span>
+                    </button>
+                    <button 
+                      @click="resetAllForms"
+                      :disabled="!formData || formData.length === 0"
+                      class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 active:bg-gray-800 transition-colors duration-200 flex items-center justify-center font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Reset semua form ke nilai default (Alpha)"
+                    >
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                      </svg>
+                      <span class="hidden sm:inline">Reset</span>
+                      <span class="sm:hidden">↻</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -483,6 +497,53 @@ const initializeFormData = () => {
   })
 }
 
+// Reset all forms to default state (manual reset button)
+const resetAllForms = () => {
+  if (!formData.value || formData.value.length === 0) return;
+  
+  isLoading.value = true;
+  
+  formData.value.forEach(data => {
+    if (data.siswa && Array.isArray(data.siswa)) {
+      data.siswa.forEach(siswaData => {
+        if (siswaData.siswa) {
+          // Reset ke nilai default
+          siswaData.statusForm = 'alpha';
+          siswaData.jamMasukForm = '';
+          siswaData.jamKeluarForm = '';
+          siswaData.keteranganForm = '';
+        }
+      });
+    }
+  });
+  
+  setTimeout(() => {
+    isLoading.value = false;
+    showNotification('Form berhasil direset ke nilai default!', 'success');
+  }, 300);
+};
+
+// Reset semua form data ke nilai default (alpha)
+const resetFormToDefault = () => {
+  if (!formData.value || formData.value.length === 0) {
+    return
+  }
+  
+  formData.value.forEach(data => {
+    if (data.siswa && Array.isArray(data.siswa)) {
+      data.siswa.forEach(siswaData => {
+        if (siswaData.siswa) {
+          // Reset ke nilai default
+          siswaData.statusForm = 'alpha'
+          siswaData.jamMasukForm = ''
+          siswaData.jamKeluarForm = ''
+          siswaData.keteranganForm = ''
+        }
+      })
+    }
+  })
+}
+
 watch(() => props.absensiData, (newData) => {
   initializeFormData()
 }, { deep: true, immediate: true })
@@ -603,9 +664,6 @@ const submitAbsensi = (data) => {
       // Set flag bahwa data absensi telah berubah
       localStorage.setItem('absensi_updated', Date.now().toString())
       
-      // Reload data after successful submission
-      initializeFormData()
-      
       // Safe navigation untuk pesan sukses
       const mataPelajaranNama = data.jadwal?.mata_pelajaran?.nama_mapel || 
                                'Mata Pelajaran'
@@ -614,7 +672,12 @@ const submitAbsensi = (data) => {
       
       showModal.value = true
       modalType.value = 'success'
-      modalMessage.value = `Absensi untuk ${mataPelajaranNama} - ${kelasNama} berhasil disimpan!`
+      modalMessage.value = `Absensi untuk ${mataPelajaranNama} - ${kelasNama} berhasil disimpan! Form akan direset ke nilai default.`
+      
+      // Reset form setelah sedikit delay untuk memberikan feedback visual
+      setTimeout(() => {
+        resetFormToDefault()
+      }, 1500)
     },
     preserveScroll: true
   })

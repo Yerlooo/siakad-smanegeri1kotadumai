@@ -100,6 +100,55 @@ class User extends Authenticatable
         return $this->hasRole('murid');
     }
 
+    /**
+     * Check if user is a wali kelas (homeroom teacher)
+     */
+    public function isWaliKelas()
+    {
+        return $this->isGuru() && $this->kelasAsWali()->exists();
+    }
+
+    /**
+     * Get all classes where this user is assigned as wali kelas
+     */
+    public function getWaliKelasClasses()
+    {
+        return $this->kelasAsWali()->with(['siswa', 'jadwalPelajaran.mataPelajaran'])->get();
+    }
+
+    /**
+     * Check if user can access specific kelas as wali kelas
+     */
+    public function canAccessAsWaliKelas($kelasId)
+    {
+        return $this->isWaliKelas() && $this->kelasAsWali()->where('id', $kelasId)->exists();
+    }
+
+    /**
+     * Get siswa IDs from classes where user is wali kelas
+     */
+    public function getWaliKelasSiswaIds()
+    {
+        if (!$this->isWaliKelas()) {
+            return collect([]);
+        }
+
+        return $this->kelasAsWali()
+            ->with('siswa')
+            ->get()
+            ->pluck('siswa')
+            ->flatten()
+            ->pluck('id');
+    }
+
+    /**
+     * Check if user has extended privileges as wali kelas for a specific student
+     */
+    public function hasWaliKelasPrivilegeForSiswa($siswaId)
+    {
+        return $this->getWaliKelasSiswaIds()->contains($siswaId);
+    }
+
     // Relasi ke model Siswa
     public function siswa()
     {

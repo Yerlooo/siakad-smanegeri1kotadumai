@@ -39,6 +39,15 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+                                
+                                <!-- Wali Kelas Menu -->
+                                <NavLink
+                                    v-if="$page.props.auth.user.is_wali_kelas"
+                                    :href="route('wali-kelas.dashboard')"
+                                    :active="route().current('wali-kelas.*')"
+                                >
+                                    Wali Kelas
+                                </NavLink>
                             </div>
                         </div>
 

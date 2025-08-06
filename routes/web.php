@@ -17,6 +17,9 @@ use App\Http\Controllers\AbsensiExportController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\WaliKelasController;
+use App\Http\Controllers\WaliKelasPrivilegeController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TestingController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -28,6 +31,16 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Global Search - menggunakan GET untuk menghindari CSRF
+    Route::get('/search/global', [SearchController::class, 'globalSearch'])->name('search.global');
+    
+    // Functional Testing (only in development)
+    if (config('app.env') === 'local' || config('app.debug')) {
+        Route::get('/functional-test', function () {
+            return view('testing.functional-test');
+        })->name('functional-test');
+    }
     
     // Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -111,6 +124,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
     });
+
+    // === WALI KELAS PRIVILEGES === //
+    // Routes khusus untuk guru yang ditugaskan sebagai wali kelas (HARUS DI ATAS SEBELUM WALI KELAS MANAGEMENT)
+    Route::middleware('wali_kelas:wali_kelas_only')->group(function () {
+        Route::get('/wali-kelas-dashboard', [WaliKelasPrivilegeController::class, 'dashboard'])->name('wali-kelas.dashboard');
+        Route::get('/wali-kelas/monitoring-siswa', [WaliKelasPrivilegeController::class, 'monitoringSiswa'])->name('wali-kelas.monitoring-siswa');
+        Route::get('/wali-kelas/konsultasi-siswa', [WaliKelasPrivilegeController::class, 'konsultasiSiswa'])->name('wali-kelas.konsultasi-siswa');
+        Route::get('/wali-kelas/laporan-kelas/{kelasId}', [WaliKelasPrivilegeController::class, 'laporanKelas'])->name('wali-kelas.laporan-kelas');
+        Route::get('/wali-kelas/laporan-kelas/{kelasId}/export-pdf', [WaliKelasPrivilegeController::class, 'exportLaporanPDF'])->name('wali-kelas.export-pdf');
+        Route::get('/wali-kelas/laporan-kelas/{kelasId}/export-excel', [WaliKelasPrivilegeController::class, 'exportLaporanExcel'])->name('wali-kelas.export-excel');
+        Route::get('/wali-kelas/laporan-kelas/{kelasId}/student/{siswaId}/pdf', [WaliKelasPrivilegeController::class, 'exportStudentReportPDF'])->name('wali-kelas.student-report-pdf');
+        Route::get('/wali-kelas/student-report/{kelasId}/{siswaId}', [WaliKelasPrivilegeController::class, 'exportStudentReportPDF'])->name('wali-kelas.student-report-pdf');
+        Route::get('/wali-kelas/edit-siswa/{siswaId}', [WaliKelasPrivilegeController::class, 'editSiswa'])->name('wali-kelas.edit-siswa');
+        Route::put('/wali-kelas/update-siswa/{siswaId}', [WaliKelasPrivilegeController::class, 'updateSiswa'])->name('wali-kelas.update-siswa');
+    });
     
     // Wali Kelas Management (accessible by Kepala Tata Usaha and Tata Usaha)
     Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
@@ -119,7 +147,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/wali-kelas/{kelas}/assign', [WaliKelasController::class, 'assign'])->name('wali-kelas.assign');
         Route::delete('/wali-kelas/{kelas}/remove', [WaliKelasController::class, 'remove'])->name('wali-kelas.remove');
     });
-    
+
     // === SISTEM PERSETUJUAN === //
     // Approval Request Routes
     Route::middleware('role:tata_usaha')->group(function () {
@@ -153,5 +181,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/murid/profil', [SiswaController::class, 'profile'])->name('murid.profil');
     });
 });
+
+// Include testing routes if in development environment
+if (config('app.env') === 'local' || config('app.debug')) {
+    require __DIR__.'/testing.php';
+}
 
 require __DIR__.'/auth.php';

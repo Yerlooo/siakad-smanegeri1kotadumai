@@ -14,10 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\SecurityMiddleware::class,
         ]);
 
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'wali_kelas' => \App\Http\Middleware\WaliKelasMiddleware::class,
+            'login.limiter' => \App\Http\Middleware\LoginRateLimiter::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
