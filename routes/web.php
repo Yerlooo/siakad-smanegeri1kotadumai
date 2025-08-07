@@ -38,7 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Functional Testing (only in development)
     if (config('app.env') === 'local' || config('app.debug')) {
         Route::get('/functional-test', function () {
-            return view('testing.functional-test');
+            return view('functional-test');
         })->name('functional-test');
     }
     
@@ -73,6 +73,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Export routes
         Route::get('/nilai-siswa/export/excel', [NilaiSiswaController::class, 'exportExcel'])->name('nilai-siswa.export.excel');
         Route::get('/nilai-siswa/export/pdf', [NilaiSiswaController::class, 'exportPdf'])->name('nilai-siswa.export.pdf');
+        
+        // API untuk jenis nilai (hanya untuk guru)
+        Route::middleware('role:guru')->group(function () {
+            Route::get('/api/jenis-nilai', [NilaiSiswaController::class, 'getJenisNilai'])->name('api.jenis-nilai.get');
+            Route::post('/api/jenis-nilai', [NilaiSiswaController::class, 'storeJenisNilai'])->name('api.jenis-nilai.store');
+            Route::put('/api/jenis-nilai/{id}', [NilaiSiswaController::class, 'updateJenisNilai'])->name('api.jenis-nilai.update');
+            Route::delete('/api/jenis-nilai/{id}', [NilaiSiswaController::class, 'deleteJenisNilai'])->name('api.jenis-nilai.delete');
+            Route::post('/api/jenis-nilai/settings', [NilaiSiswaController::class, 'saveJenisNilaiSettings'])->name('api.jenis-nilai.settings');
+        });
     });
     
     // Nilai Saya - untuk Murid
@@ -188,3 +197,8 @@ if (config('app.env') === 'local' || config('app.debug')) {
 }
 
 require __DIR__.'/auth.php';
+
+// Load debug routes in development
+if (app()->environment('local')) {
+    require __DIR__.'/debug.php';
+}

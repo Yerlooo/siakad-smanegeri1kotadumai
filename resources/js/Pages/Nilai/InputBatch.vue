@@ -188,7 +188,7 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(siswa, index) in filteredSiswa" :key="siswa.id"
-                                    :class="{ 'bg-red-50': (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue }">
+                                    :class="{ 'bg-red-50': getNilaiSiswa(siswa.id) < kkmValue }">
                                     <!-- Nomor -->
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         {{ index + 1 }}
@@ -231,7 +231,7 @@
                                        'w-20 px-3 py-2 border rounded-md text-sm text-center font-medium',
                                        isNilaiFinal(siswa.id) 
                                            ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                                           : (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue 
+                                           : getNilaiSiswa(siswa.id) < kkmValue 
                                                ? 'border-red-300 bg-red-50 text-red-900' 
                                                : 'border-gray-300 bg-white text-gray-900'
                                    ]"
@@ -271,12 +271,12 @@
                                         <div class="flex items-center space-x-2">
                                             <span :class="[
                                                 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                                getPredikatClass(form.nilai_siswa[siswa.id]?.nilai || 0)
+                                                getPredikatClass(getNilaiSiswa(siswa.id))
                                             ]">
-                                                {{ getPredikat(form.nilai_siswa[siswa.id]?.nilai || 0).huruf }}
+                                                {{ getPredikat(getNilaiSiswa(siswa.id)).huruf }}
                                             </span>
                                             <span class="text-xs text-gray-600">
-                                                {{ getPredikat(form.nilai_siswa[siswa.id]?.nilai || 0).predikat }}
+                                                {{ getPredikat(getNilaiSiswa(siswa.id)).predikat }}
                                             </span>
                                         </div>
                                     </td>
@@ -285,11 +285,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span :class="[
                                             'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                            (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue
+                                            getNilaiSiswa(siswa.id) >= kkmValue
                                                 ? 'bg-green-100 text-green-800'
                                                 : 'bg-red-100 text-red-800'
                                         ]">
-                                            {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
+                                            {{ getNilaiSiswa(siswa.id) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
                                         </span>
                                     </td>
                                     
@@ -310,7 +310,7 @@
                         <div v-for="(siswa, index) in filteredSiswa" :key="siswa.id"
                              :class="[
                                  'bg-white border rounded-lg p-4 shadow-sm',
-                                 (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                                 getNilaiSiswa(siswa.id) < kkmValue ? 'border-red-200 bg-red-50' : 'border-gray-200'
                              ]">
                             <!-- Header -->
                             <div class="flex items-center justify-between mb-4">
@@ -341,7 +341,7 @@
                                                    'w-full px-3 py-2 border rounded-md text-sm text-center font-medium',
                                                    isNilaiFinal(siswa.id) 
                                                        ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                                                       : (form.nilai_siswa[siswa.id]?.nilai || 0) < kkmValue 
+                                                       : getNilaiSiswa(siswa.id) < kkmValue 
                                                            ? 'border-red-300 bg-red-50 text-red-900' 
                                                            : 'border-gray-300 bg-white text-gray-900'
                                                ]"
@@ -391,21 +391,21 @@
                                 <div class="flex items-center space-x-2">
                                     <span :class="[
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                        getPredikatClass(form.nilai_siswa[siswa.id]?.nilai || 0)
+                                        getPredikatClass(getNilaiSiswa(siswa.id))
                                     ]">
-                                        {{ getPredikat(form.nilai_siswa[siswa.id]?.nilai || 0).huruf }}
+                                        {{ getPredikat(getNilaiSiswa(siswa.id)).huruf }}
                                     </span>
                                     <span class="text-xs text-gray-600">
-                                        {{ getPredikat(form.nilai_siswa[siswa.id]?.nilai || 0).predikat }}
+                                        {{ getPredikat(getNilaiSiswa(siswa.id)).predikat }}
                                     </span>
                                 </div>
                                 <span :class="[
                                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                    (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue
+                                    getNilaiSiswa(siswa.id) >= kkmValue
                                         ? 'bg-green-100 text-green-800'
                                         : 'bg-red-100 text-red-800'
                                 ]">
-                                    {{ (form.nilai_siswa[siswa.id]?.nilai || 0) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
+                                    {{ getNilaiSiswa(siswa.id) >= kkmValue ? 'Tuntas' : 'Belum Tuntas' }}
                                 </span>
                             </div>
                         </div>
@@ -581,7 +581,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, Link, Head } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import ConfirmModal from '@/Components/ConfirmModal.vue'
@@ -611,6 +611,13 @@ const selectedSiswaForApproval = ref(null)
 // Helper function untuk mendapatkan nilai KKM
 const getKkmValue = () => {
     return props.kkm?.kkm || 75
+}
+
+// Helper function untuk mendapatkan nilai siswa sebagai number
+const getNilaiSiswa = (siswaId) => {
+    const nilai = form.nilai_siswa[siswaId]?.nilai
+    if (nilai === '' || nilai === null || nilai === undefined) return 0
+    return parseFloat(nilai) || 0
 }
 
 // Computed property untuk nilai KKM
@@ -670,20 +677,27 @@ const nilaiErrors = ref({})
 
 // Method untuk validasi dan update nilai
 const validateAndUpdateNilai = (siswaId, event) => {
-    const nilai = parseFloat(event.target.value)
-    
     // Clear previous error
     delete nilaiErrors.value[siswaId]
     
+    // Jika input kosong, set sebagai string kosong
+    if (event.target.value === '') {
+        form.nilai_siswa[siswaId].nilai = ''
+        updatePredikat(siswaId)
+        return
+    }
+    
+    const nilai = parseFloat(event.target.value)
+    
     // Validasi rentang nilai
-    if (event.target.value !== '' && (isNaN(nilai) || nilai < 0 || nilai > 100)) {
+    if (isNaN(nilai) || nilai < 0 || nilai > 100) {
         nilaiErrors.value[siswaId] = 'Nilai harus dalam rentang 0-100'
         // Tidak update nilai jika tidak valid
         return
     }
     
-    // Update nilai jika valid
-    form.nilai_siswa[siswaId].nilai = event.target.value
+    // Update nilai jika valid - simpan sebagai number yang sama seperti applyBulkValue
+    form.nilai_siswa[siswaId].nilai = nilai
     
     // Update predikat
     updatePredikat(siswaId)
@@ -797,12 +811,13 @@ const applyBulkValue = () => {
     }
     
     Object.keys(form.nilai_siswa).forEach(siswaId => {
-        form.nilai_siswa[siswaId].nilai = bulkValue.value
+        // Simpan sebagai number yang konsisten dengan validateAndUpdateNilai
+        form.nilai_siswa[siswaId].nilai = nilai
         // Clear any previous errors
         delete nilaiErrors.value[siswaId]
     })
     
-    showSuccess('Bulk Value Berhasil Diterapkan!', `Nilai ${bulkValue.value} telah diterapkan ke semua siswa.`)
+    showSuccess('Bulk Value Berhasil Diterapkan!', `Nilai ${nilai} telah diterapkan ke semua siswa.`)
 }
 
 const getPredikat = (nilai) => {

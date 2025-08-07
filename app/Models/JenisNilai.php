@@ -13,7 +13,10 @@ class JenisNilai extends Model
         'kategori',
         'bobot',
         'deskripsi',
-        'status'
+        'status',
+        'guru_id',
+        'mata_pelajaran_id',
+        'kelas_id'
     ];
 
     protected function casts(): array
@@ -28,6 +31,21 @@ class JenisNilai extends Model
     public function nilaiSiswa()
     {
         return $this->hasMany(NilaiSiswa::class);
+    }
+
+    public function guru()
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
+
+    public function mataPelajaran()
+    {
+        return $this->belongsTo(MataPelajaran::class, 'mata_pelajaran_id');
+    }
+
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
     // Helper methods

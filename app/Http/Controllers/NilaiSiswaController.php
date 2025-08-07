@@ -58,7 +58,23 @@ class NilaiSiswaController extends Controller
             foreach ($jadwalList as $jadwal) {
                 $totalSiswa = $jadwal->kelas->siswa()->count();
                 
-                if ($totalSiswa > 0 && $totalJenisNilai > 0) {
+                // Ambil jenis nilai untuk guru ini di mata pelajaran dan kelas ini
+                $jenisNilaiKelas = JenisNilai::where(function($query) use ($user, $mataPelajaranId, $jadwal) {
+                        $query->where('guru_id', $user->id)
+                              ->where('mata_pelajaran_id', $mataPelajaranId)
+                              ->where('kelas_id', $jadwal->kelas_id);
+                    })
+                    ->orWhere(function($query) {
+                        $query->whereNull('guru_id') // Global jenis nilai
+                              ->whereNull('mata_pelajaran_id')
+                              ->whereNull('kelas_id');
+                    })
+                    ->where('status', true)
+                    ->get();
+                
+                $totalJenisNilaiKelas = $jenisNilaiKelas->count();
+                
+                if ($totalSiswa > 0 && $totalJenisNilaiKelas > 0) {
                     // Hitung progress berdasarkan kelengkapan jenis nilai
                     $siswaIds = $jadwal->kelas->siswa->pluck('id');
                     
@@ -70,12 +86,12 @@ class NilaiSiswaController extends Controller
                             ->where('siswa_id', $siswaId)
                             ->where('semester', $semester)
                             ->where('tahun_ajaran', $tahunAjaran)
-                            ->whereIn('jenis_nilai_id', $jenisNilaiAktif->pluck('id'))
+                            ->whereIn('jenis_nilai_id', $jenisNilaiKelas->pluck('id'))
                             ->distinct('jenis_nilai_id')
                             ->count();
                         
                         // Progress per siswa = jenis nilai terisi / total jenis nilai
-                        $progressCount += ($jenisNilaiTerisi / $totalJenisNilai);
+                        $progressCount += ($jenisNilaiTerisi / $totalJenisNilaiKelas);
                     }
                     
                     $progressPersen = round(($progressCount / $totalSiswa) * 100);
@@ -87,18 +103,18 @@ class NilaiSiswaController extends Controller
                             ->where('siswa_id', $siswaId)
                             ->where('semester', $semester)
                             ->where('tahun_ajaran', $tahunAjaran)
-                            ->whereIn('jenis_nilai_id', $jenisNilaiAktif->pluck('id'))
+                            ->whereIn('jenis_nilai_id', $jenisNilaiKelas->pluck('id'))
                             ->distinct('jenis_nilai_id')
                             ->count();
                         
-                        if ($jenisNilaiTerisi == $totalJenisNilai) {
+                        if ($jenisNilaiTerisi == $totalJenisNilaiKelas) {
                             $siswaLengkap++;
                         }
                     }
                     
                     // Tambahkan informasi status untuk setiap jenis nilai
                     $statusJenisNilai = [];
-                    foreach ($jenisNilaiAktif as $jenisNilai) {
+                    foreach ($jenisNilaiKelas as $jenisNilai) {
                         $nilaiStatus = NilaiSiswa::where('mata_pelajaran_id', $mataPelajaranId)
                             ->where('jenis_nilai_id', $jenisNilai->id)
                             ->where('semester', $semester)
@@ -553,7 +569,7 @@ class NilaiSiswaController extends Controller
         
         // Pastikan guru mengajar mata pelajaran ini di kelas ini (kecuali kepala tata usaha)
         if (!$user->hasRole('kepala_tatausaha')) {
-            $jadwal = JadwalPelajaran::where('guru_id', $user->id)
+            $jadwal = JadwalPelajaran::where('guru_id', $request->mata_pelajaran_id)
                 ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
                 ->where('kelas_id', $request->kelas_id)
                 ->where('semester', $semester)
@@ -596,5 +612,350 @@ class NilaiSiswaController extends Controller
         $pdf->setPaper('A4', 'landscape');
         
         return $pdf->download($fileName);
+    }
+
+    /**
+     * Get jenis nilai untuk mata pelajaran dan kelas tertentu
+     */
+    public function getJenisNilai(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Validasi parameter
+        $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id'
+        ]);
+
+        // Ambil tahun ajaran dan semester aktif dari settings
+        $tahunAjaran = Setting::get('academic_year', '2024/2025');
+        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+
+        // Pastikan guru mengajar mata pelajaran ini di kelas ini
+        $jadwal = JadwalPelajaran::where('guru_id', $user->id)
+            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+            ->where('kelas_id', $request->kelas_id)
+            ->where('semester', $semester)
+            ->where('tahun_ajaran', $tahunAjaran)
+            ->first();
+
+        if (!$jadwal && !$user->isKepalaSekolah()) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
+        // Ambil jenis nilai yang dibuat oleh guru ini untuk mata pelajaran dan kelas ini
+        // atau jenis nilai global (guru_id = null)
+        $jenisNilai = JenisNilai::where(function($query) use ($user, $request) {
+                $query->where('guru_id', $user->id)
+                      ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+                      ->where('kelas_id', $request->kelas_id);
+            })
+            ->orWhere(function($query) {
+                $query->whereNull('guru_id') // Global jenis nilai
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->where('status', true)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'jenisNilai' => $jenisNilai,
+            'totalBobot' => $jenisNilai->sum('bobot')
+        ]);
+    }
+
+    /**
+     * Store jenis nilai baru yang dibuat oleh guru
+     */
+    public function storeJenisNilai(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Validasi input
+        $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
+            'nama' => 'required|string|max:100',
+            'bobot' => 'required|numeric|min:1|max:100',
+            'deskripsi' => 'nullable|string|max:255'
+        ]);
+
+        // Ambil tahun ajaran dan semester aktif dari settings
+        $tahunAjaran = Setting::get('academic_year', '2024/2025');
+        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+
+        // Pastikan guru mengajar mata pelajaran ini di kelas ini
+        $jadwal = JadwalPelajaran::where('guru_id', $user->id)
+            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+            ->where('kelas_id', $request->kelas_id)
+            ->where('semester', $semester)
+            ->where('tahun_ajaran', $tahunAjaran)
+            ->first();
+
+        if (!$jadwal && !$user->isKepalaSekolah()) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
+        // Cek apakah nama jenis nilai sudah ada untuk guru ini di mata pelajaran dan kelas yang sama
+        $existingJenis = JenisNilai::where('guru_id', $user->id)
+            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+            ->where('kelas_id', $request->kelas_id)
+            ->where('nama', $request->nama)
+            ->first();
+
+        if ($existingJenis) {
+            return response()->json(['error' => 'Jenis nilai dengan nama tersebut sudah ada'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Cek total bobot saat ini
+            $totalBobotSekarang = JenisNilai::where('guru_id', $user->id)
+                ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+                ->where('kelas_id', $request->kelas_id)
+                ->where('status', true)
+                ->sum('bobot');
+
+            if (($totalBobotSekarang + $request->bobot) > 100) {
+                DB::rollback();
+                return response()->json([
+                    'error' => 'Total bobot akan melebihi 100%. Total saat ini: ' . $totalBobotSekarang . '%'
+                ], 422);
+            }
+
+            // Buat jenis nilai baru
+            $jenisNilai = JenisNilai::create([
+                'nama' => $request->nama,
+                'kategori' => 'custom',
+                'bobot' => $request->bobot,
+                'deskripsi' => $request->deskripsi,
+                'status' => true,
+                'guru_id' => $user->id,
+                'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'kelas_id' => $request->kelas_id,
+                'semester' => $semester,
+                'tahun_ajaran' => $tahunAjaran
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jenis nilai berhasil ditambahkan',
+                'jenisNilai' => $jenisNilai
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Gagal menambahkan jenis nilai: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update jenis nilai yang dibuat oleh guru
+     */
+    public function updateJenisNilai(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        // Validasi input
+        $request->validate([
+            'nama' => 'required|string|max:100',
+            'bobot' => 'required|numeric|min:1|max:100',
+            'deskripsi' => 'nullable|string|max:255'
+        ]);
+
+        try {
+            // Cari jenis nilai yang akan diupdate
+            $jenisNilai = JenisNilai::where('id', $id)
+                ->where('guru_id', $user->id)
+                ->first();
+
+            if (!$jenisNilai) {
+                return response()->json(['error' => 'Jenis nilai tidak ditemukan atau bukan milik Anda'], 404);
+            }
+
+            // Cek apakah ada nilai siswa yang sudah menggunakan jenis nilai ini
+            $hasNilaiSiswa = NilaiSiswa::where('jenis_nilai_id', $id)->exists();
+
+            if ($hasNilaiSiswa && $jenisNilai->bobot != $request->bobot) {
+                return response()->json([
+                    'error' => 'Tidak dapat mengubah bobot karena sudah ada nilai siswa yang menggunakan jenis nilai ini'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Cek total bobot jika bobot diubah
+            if ($jenisNilai->bobot != $request->bobot) {
+                $totalBobotLain = JenisNilai::where('guru_id', $user->id)
+                    ->where('mata_pelajaran_id', $jenisNilai->mata_pelajaran_id)
+                    ->where('kelas_id', $jenisNilai->kelas_id)
+                    ->where('id', '!=', $id)
+                    ->where('status', true)
+                    ->sum('bobot');
+
+                if (($totalBobotLain + $request->bobot) > 100) {
+                    DB::rollback();
+                    return response()->json([
+                        'error' => 'Total bobot akan melebihi 100%. Total bobot lainnya: ' . $totalBobotLain . '%'
+                    ], 422);
+                }
+            }
+
+            // Update jenis nilai
+            $jenisNilai->update([
+                'nama' => $request->nama,
+                'bobot' => $request->bobot,
+                'deskripsi' => $request->deskripsi
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jenis nilai berhasil diperbarui',
+                'jenisNilai' => $jenisNilai
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Gagal memperbarui jenis nilai: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete jenis nilai yang dibuat oleh guru
+     */
+    public function deleteJenisNilai($id)
+    {
+        $user = auth()->user();
+
+        try {
+            // Cari jenis nilai yang akan dihapus
+            $jenisNilai = JenisNilai::find($id);
+
+            if (!$jenisNilai) {
+                return response()->json(['error' => 'Jenis nilai tidak ditemukan'], 404);
+            }
+
+            // Jika jenis nilai adalah global (guru_id = null), tidak bisa dihapus
+            if ($jenisNilai->guru_id === null) {
+                return response()->json(['error' => 'Jenis nilai global tidak dapat dihapus'], 403);
+            }
+
+            // Pastikan hanya guru yang membuat jenis nilai ini yang bisa menghapusnya
+            if ($jenisNilai->guru_id !== $user->id) {
+                return response()->json(['error' => 'Anda tidak memiliki akses untuk menghapus jenis nilai ini'], 403);
+            }
+
+            // Cek apakah ada nilai siswa yang sudah menggunakan jenis nilai ini
+            $hasNilaiSiswa = NilaiSiswa::where('jenis_nilai_id', $id)->exists();
+
+            if ($hasNilaiSiswa) {
+                return response()->json([
+                    'error' => 'Tidak dapat menghapus jenis nilai karena sudah ada nilai siswa yang menggunakannya'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Hapus jenis nilai secara permanen
+            $jenisNilai->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jenis nilai berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Gagal menghapus jenis nilai: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Simpan semua pengaturan jenis nilai untuk mata pelajaran dan kelas
+     */
+    public function saveJenisNilaiSettings(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Validasi input
+        $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
+            'jenis_nilai' => 'required|array|min:1',
+            'jenis_nilai.*.nama' => 'required|string|max:100',
+            'jenis_nilai.*.bobot' => 'required|numeric|min:1|max:100',
+            'jenis_nilai.*.deskripsi' => 'nullable|string|max:255'
+        ]);
+
+        // Validasi total bobot harus 100%
+        $totalBobot = collect($request->jenis_nilai)->sum('bobot');
+        if ($totalBobot != 100) {
+            return response()->json(['error' => 'Total bobot harus 100%'], 422);
+        }
+
+        // Ambil tahun ajaran dan semester aktif dari settings
+        $tahunAjaran = Setting::get('academic_year', '2024/2025');
+        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+
+        // Pastikan guru mengajar mata pelajaran ini di kelas ini
+        $jadwal = JadwalPelajaran::where('guru_id', $user->id)
+            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+            ->where('kelas_id', $request->kelas_id)
+            ->where('semester', $semester)
+            ->where('tahun_ajaran', $tahunAjaran)
+            ->first();
+
+        if (!$jadwal && !$user->isKepalaSekolah()) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Hapus jenis nilai lama untuk guru ini di mata pelajaran dan kelas yang sama
+            JenisNilai::where('guru_id', $user->id)
+                ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+                ->where('kelas_id', $request->kelas_id)
+                ->update(['status' => false]);
+
+            // Buat jenis nilai baru
+            $jenisNilaiBaru = [];
+            foreach ($request->jenis_nilai as $jenisData) {
+                $jenisNilai = JenisNilai::create([
+                    'nama' => $jenisData['nama'],
+                    'kategori' => 'custom',
+                    'bobot' => $jenisData['bobot'],
+                    'deskripsi' => $jenisData['deskripsi'] ?? null,
+                    'status' => true,
+                    'guru_id' => $user->id,
+                    'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                    'kelas_id' => $request->kelas_id,
+                    'semester' => $semester,
+                    'tahun_ajaran' => $tahunAjaran
+                ]);
+                
+                $jenisNilaiBaru[] = $jenisNilai;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengaturan jenis nilai berhasil disimpan',
+                'jenisNilai' => $jenisNilaiBaru
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Gagal menyimpan pengaturan: ' . $e->getMessage()], 500);
+        }
     }
 }
