@@ -13,6 +13,7 @@ use App\Http\Controllers\NilaiSayaController;
 use App\Http\Controllers\MuridProfileController;
 use App\Http\Controllers\KkmController;
 use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\AbsensiGuruController;
 use App\Http\Controllers\AbsensiExportController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\NotificationController;
@@ -116,6 +117,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/absensi/laporan', [AbsensiController::class, 'laporan'])->name('absensi.laporan');
         Route::get('/absensi/monitoring', [AbsensiController::class, 'monitoring'])->name('absensi.monitoring');
         Route::get('/absensi/monitoring/api', [AbsensiController::class, 'monitoringApi'])->name('absensi.monitoring.api');
+    });
+    
+    // === ABSENSI GURU === //
+    // Monitoring Absensi Guru (accessible by Kepala Tata Usaha and Tata Usaha) - HARUS DI ATAS ROUTES DENGAN PARAMETER
+    Route::middleware('role:kepala_tatausaha,tata_usaha')->group(function () {
+        Route::get('/absensi-guru/monitoring', [AbsensiGuruController::class, 'monitoring'])->name('absensi-guru.monitoring');
+        Route::put('/absensi-guru/{absensiGuru}/status', [AbsensiGuruController::class, 'updateStatus'])->name('absensi-guru.update-status');
+    });
+    
+    // Absensi Guru (accessible by Guru only)
+    Route::middleware('role:guru')->group(function () {
+        Route::get('/absensi-guru', [AbsensiGuruController::class, 'index'])->name('absensi-guru.index');
+        Route::get('/absensi-guru/create', [AbsensiGuruController::class, 'create'])->name('absensi-guru.create');
+        Route::post('/absensi-guru', [AbsensiGuruController::class, 'store'])->name('absensi-guru.store');
+        Route::get('/absensi-guru/{absensiGuru}', [AbsensiGuruController::class, 'show'])->name('absensi-guru.show');
+        Route::get('/absensi-guru/{absensiGuru}/edit', [AbsensiGuruController::class, 'edit'])->name('absensi-guru.edit');
+        Route::put('/absensi-guru/{absensiGuru}', [AbsensiGuruController::class, 'update'])->name('absensi-guru.update');
+        Route::delete('/absensi-guru/{absensiGuru}', [AbsensiGuruController::class, 'destroy'])->name('absensi-guru.destroy');
     });
     
     // KKM Management (accessible by Guru, Kepala Tata Usaha and Tata Usaha)

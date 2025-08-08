@@ -53,8 +53,39 @@
                             </div>
                             <div class="ml-3 sm:ml-4">
                                 <h3 class="text-base sm:text-lg font-semibold">Jenis Penilaian</h3>
-                                <p class="text-xl sm:text-2xl font-bold">{{ props.jenisNilai.length }}</p>
+                                <p class="text-xl sm:text-2xl font-bold">{{ totalJenisNilaiCustom }}</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Utama Pengaturan Jenis Nilai -->
+                <div class="mb-6">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div class="mb-4 sm:mb-0">
+                                <h3 class="text-lg sm:text-xl font-semibold mb-2">⚙️ Pengaturan Jenis Nilai</h3>
+                                <p class="text-blue-100 text-sm sm:text-base">
+                                    Atur jenis penilaian yang akan digunakan untuk semua mata pelajaran dan kelas yang Anda ajar
+                                </p>
+                                <div class="mt-2 text-blue-100 text-xs sm:text-sm">
+                                    Total jenis nilai saat ini: <span class="font-semibold">{{ totalJenisNilaiCustom }}</span>
+                                    <span v-if="totalBobot !== 100" class="ml-2 px-2 py-1 bg-yellow-500 text-white rounded-full text-xs">
+                                        Bobot: {{ totalBobot }}%
+                                    </span>
+                                    <span v-else class="ml-2 px-2 py-1 bg-green-500 text-white rounded-full text-xs">
+                                        ✓ Bobot: 100%
+                                    </span>
+                                </div>
+                            </div>
+                            <button @click="openMainSettingsModal"
+                                    class="w-full sm:w-auto px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 shadow-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>Atur Jenis Nilai</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -141,8 +172,20 @@
 
                                     <!-- Quick Actions -->
                                     <div class="space-y-2 mb-3">
+                                        <!-- Pesan ketika belum ada jenis nilai custom yang diatur -->
+                                        <div v-if="getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length === 0" 
+                                             class="text-center py-3 px-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div class="text-xs text-yellow-700">
+                                                <svg class="w-4 h-4 mx-auto mb-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <p class="font-medium">Belum ada jenis nilai</p>
+                                                <p class="text-xs">Atur jenis nilai terlebih dahulu</p>
+                                            </div>
+                                        </div>
+                                        
                                         <!-- Mobile: Stack vertically, Desktop: Grid -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2">
+                                        <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2">
                                             <button v-for="jenis in getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).slice(0, 3)" :key="jenis.id"
                                                     @click="inputNilai(progress.mata_pelajaran.id, kelas.kelas.id, jenis.id)"
                                                     :title="getStatusTooltip(kelas, jenis.id)"
@@ -177,23 +220,14 @@
                                             <span class="hidden sm:inline">Lihat </span>Detail
                                         </button>
                                         <button @click="inputCustom(progress.mata_pelajaran.id, kelas.kelas.id)"
-                                                class="flex-1 inline-flex items-center justify-center text-xs px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 transition-colors font-medium">
+                                                :disabled="getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length === 0"
+                                                :class="getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length === 0 ? 
+                                                    'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 active:bg-green-700'"
+                                                class="flex-1 inline-flex items-center justify-center text-xs px-3 py-2 text-white rounded-lg transition-colors font-medium">
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                             </svg>
-                                            Input Nilai
-                                        </button>
-                                    </div>
-                                    
-                                    <!-- Tombol Pengaturan Jenis Nilai -->
-                                    <div class="mt-2 pt-2 border-t border-gray-100">
-                                        <button @click="openSettingsModal(progress.mata_pelajaran.id, kelas.kelas.id)"
-                                                class="w-full inline-flex items-center justify-center text-xs px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 transition-colors font-medium">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            </svg>
-                                            Atur Jenis Nilai
+                                            {{ getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length === 0 ? 'Atur Jenis Nilai Dulu' : 'Input Nilai' }}
                                         </button>
                                     </div>
                                 </div>
@@ -238,8 +272,20 @@
                             
                             <!-- Scrollable content -->
                             <div class="overflow-y-auto max-h-[calc(90vh-140px)] p-4 sm:p-6">
+                                <!-- Pesan ketika belum ada jenis nilai custom -->
+                                <div v-if="allJenisNilai.length === 0" class="text-center py-12">
+                                    <div class="w-16 h-16 mx-auto bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                                        <svg class="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Belum Ada Jenis Nilai</h3>
+                                    <p class="text-gray-600 mb-4">Anda belum mengatur jenis nilai untuk semua mata pelajaran yang Anda ajar.</p>
+                                    <p class="text-sm text-gray-500">Silakan tutup modal ini dan klik "Atur Jenis Nilai" terlebih dahulu.</p>
+                                </div>
+                                
                                 <!-- Grid responsive untuk cards -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                     <div v-for="jenis in allJenisNilai" :key="jenis.id"
                                          @click="selectJenisNilai(jenis.id)"
                                          :class="getModalJenisClass(jenis.id)"
@@ -286,8 +332,8 @@
                                                     </span>
                                                 </div>
                                                 
-                                                <!-- Progress Status untuk jenis nilai ini -->
-                                                <div v-if="getModalStatusDetail(jenis.id)" class="space-y-2">
+                                                <!-- Progress Status untuk jenis nilai ini - selalu tampilkan -->
+                                                <div class="space-y-2">
                                                     <div class="flex items-center justify-between">
                                                         <span class="text-xs text-gray-500">Progress:</span>
                                                         <span :class="getModalStatusDetail(jenis.id).statusClass"
@@ -397,8 +443,8 @@
                             <!-- Header -->
                             <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
                                 <div>
-                                    <h3 class="text-lg sm:text-xl font-semibold text-gray-900">Pengaturan Jenis Nilai</h3>
-                                    <p class="text-sm text-gray-600 mt-1">Atur jenis penilaian dan bobot untuk {{ getSelectedMataPelajaranName() }}</p>
+                                    <h3 class="text-lg sm:text-xl font-semibold text-gray-900">⚙️ Pengaturan Jenis Nilai Global</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Atur jenis penilaian dan bobot yang akan berlaku untuk <strong>semua mata pelajaran dan kelas</strong> yang Anda ajar</p>
                                 </div>
                                 <button @click="closeSettingsModal" 
                                         class="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-full transition-colors">
@@ -580,9 +626,8 @@
                                         </button>
                                         <button v-if="totalBobot === 100" 
                                                 @click="saveAllSettings"
-                                                :disabled="isSavingSettings"
-                                                class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400">
-                                            {{ isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan' }}
+                                                class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                            Konfirmasi Pengaturan
                                         </button>
                                     </div>
                                 </div>
@@ -628,10 +673,13 @@ const editingJenis = ref({})
 const isAddingJenisNilai = ref(false)
 const isSavingEdit = ref(false)
 const isDeletingJenis = ref(false)
-const isSavingSettings = ref(false)
 
 const totalKelas = computed(() => {
     return props.progressNilai.reduce((total, progress) => total + progress.total_kelas, 0)
+})
+
+const totalJenisNilaiCustom = computed(() => {
+    return customJenisNilai.value.length
 })
 
 const totalBobot = computed(() => {
@@ -642,46 +690,17 @@ const totalBobot = computed(() => {
     return total;
 })
 
-// Computed property untuk menggabungkan jenis nilai global dan custom untuk modal yang sedang aktif
+// Computed property untuk mendapatkan jenis nilai custom untuk modal yang sedang aktif
 const allJenisNilai = computed(() => {
-    // Gabungkan jenis nilai global (dari props) dengan custom yang sesuai
-    const globalJenis = props.jenisNilai || [];
-    
-    // Filter custom jenis nilai berdasarkan mata pelajaran dan kelas yang dipilih
-    let customJenis = [];
-    if (selectedMataPelajaran.value && selectedKelas.value) {
-        customJenis = customJenisNilai.value.filter(jenis => 
-            jenis.mata_pelajaran_id === selectedMataPelajaran.value && 
-            jenis.kelas_id === selectedKelas.value
-        );
-    }
-    
-    // Gabungkan dan hilangkan duplikat berdasarkan ID
-    const combined = [...globalJenis, ...customJenis];
-    const uniqueJenis = combined.filter((jenis, index, self) => 
-        index === self.findIndex(j => j.id === jenis.id)
-    );
-    
-    return uniqueJenis;
+    // Tampilkan semua jenis nilai custom yang dibuat oleh guru yang sedang login
+    // (berlaku untuk semua mata pelajaran dan kelas yang diajar)
+    return customJenisNilai.value;
 })
 
 // Function untuk mendapatkan jenis nilai untuk mata pelajaran dan kelas tertentu
 const getJenisNilaiForMataPelajaranKelas = (mataPelajaranId, kelasId) => {
-    const globalJenis = props.jenisNilai || [];
-    
-    // Filter custom jenis nilai untuk mata pelajaran dan kelas ini
-    const customJenis = customJenisNilai.value.filter(jenis => 
-        jenis.mata_pelajaran_id === mataPelajaranId && 
-        jenis.kelas_id === kelasId
-    );
-    
-    // Gabungkan dan hilangkan duplikat berdasarkan ID
-    const combined = [...globalJenis, ...customJenis];
-    const uniqueJenis = combined.filter((jenis, index, self) => 
-        index === self.findIndex(j => j.id === jenis.id)
-    );
-    
-    return uniqueJenis;
+    // Tampilkan semua jenis nilai custom guru (berlaku untuk semua mata pelajaran dan kelas)
+    return customJenisNilai.value;
 }
 
 const getOverallProgress = (kelasDetail) => {
@@ -749,13 +768,13 @@ const getButtonClass = (kelas, jenisNilaiId) => {
 
 const getStatusTooltip = (kelas, jenisNilaiId) => {
     if (!kelas.status_jenis_nilai) {
-        const jenis = props.jenisNilai.find(j => j.id === jenisNilaiId)
+        const jenis = customJenisNilai.value.find(j => j.id === jenisNilaiId)
         return `Input ${jenis?.nama || 'Nilai'}`
     }
     
     const status = kelas.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
     if (!status) {
-        const jenis = props.jenisNilai.find(j => j.id === jenisNilaiId)
+        const jenis = customJenisNilai.value.find(j => j.id === jenisNilaiId)
         return `Input ${jenis?.nama || 'Nilai'}`
     }
     
@@ -794,13 +813,29 @@ const getModalJenisClass = (jenisNilaiId) => {
 }
 
 const getModalStatusBadge = (jenisNilaiId) => {
-    if (!selectedKelas.value) return null
+    if (!selectedKelas.value || !selectedMataPelajaran.value) {
+        return { 
+            text: '📋 Siap Input', 
+            class: 'bg-blue-500 text-white' 
+        }
+    }
     
     const kelasDetail = getSelectedKelasDetail()
-    if (!kelasDetail || !kelasDetail.status_jenis_nilai) return null
+    if (!kelasDetail) {
+        return { 
+            text: '❌ Tidak Ditemukan', 
+            class: 'bg-gray-400 text-white' 
+        }
+    }
     
-    const status = kelasDetail.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
-    if (!status) return null
+    const status = kelasDetail.status_jenis_nilai?.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) {
+        // Jika tidak ada status untuk jenis nilai ini di kelas yang dipilih, tampilkan status default
+        return { 
+            text: '○ Belum', 
+            class: 'bg-gray-400 text-white' 
+        }
+    }
     
     if (status.is_all_final) {
         return { 
@@ -821,13 +856,57 @@ const getModalStatusBadge = (jenisNilaiId) => {
 }
 
 const getModalStatusDetail = (jenisNilaiId) => {
-    if (!selectedKelas.value) return null
+    if (!selectedKelas.value || !selectedMataPelajaran.value) {
+        // Jika tidak ada kelas atau mata pelajaran yang dipilih, tampilkan status default
+        return {
+            jenis_nilai_id: jenisNilaiId,
+            total_siswa: 0,
+            total_dinilai: 0,
+            final_count: 0,
+            draft_count: 0,
+            belum_dinilai: 0,
+            is_all_final: false,
+            progress: 0,
+            statusText: 'Pilih Kelas & Mata Pelajaran',
+            statusClass: 'bg-blue-100 text-blue-800',
+            progressClass: 'bg-blue-400'
+        }
+    }
     
     const kelasDetail = getSelectedKelasDetail()
-    if (!kelasDetail || !kelasDetail.status_jenis_nilai) return null
+    if (!kelasDetail) {
+        return {
+            jenis_nilai_id: jenisNilaiId,
+            total_siswa: 0,
+            total_dinilai: 0,
+            final_count: 0,
+            draft_count: 0,
+            belum_dinilai: 0,
+            is_all_final: false,
+            progress: 0,
+            statusText: 'Data Tidak Ditemukan',
+            statusClass: 'bg-gray-100 text-gray-800',
+            progressClass: 'bg-gray-400'
+        }
+    }
     
-    const status = kelasDetail.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
-    if (!status) return null
+    const status = kelasDetail.status_jenis_nilai?.find(s => s.jenis_nilai_id === jenisNilaiId)
+    if (!status) {
+        // Jika tidak ada status untuk jenis nilai ini di kelas yang dipilih, buat status default
+        return {
+            jenis_nilai_id: jenisNilaiId,
+            total_siswa: kelasDetail.total_siswa || 0,
+            total_dinilai: 0,
+            final_count: 0,
+            draft_count: 0,
+            belum_dinilai: kelasDetail.total_siswa || 0,
+            is_all_final: false,
+            progress: 0,
+            statusText: 'Belum Dinilai',
+            statusClass: 'bg-gray-100 text-gray-800',
+            progressClass: 'bg-gray-400'
+        }
+    }
     
     const progress = status.total_siswa > 0 ? (status.total_dinilai / status.total_siswa) * 100 : 0
     
@@ -905,7 +984,15 @@ const closeInputModal = () => {
 const openSettingsModal = (mataPelajaranId, kelasId) => {
     selectedMataPelajaran.value = mataPelajaranId
     selectedKelas.value = kelasId
-    loadCustomJenisNilai()
+    loadCustomJenisNilai()  // Load semua jenis nilai guru, tidak spesifik mata pelajaran/kelas
+    showSettingsModal.value = true
+}
+
+// Method untuk membuka modal pengaturan utama (tanpa parameter mata pelajaran/kelas)
+const openMainSettingsModal = () => {
+    selectedMataPelajaran.value = null
+    selectedKelas.value = null
+    loadCustomJenisNilai()  // Load semua jenis nilai guru
     showSettingsModal.value = true
 }
 
@@ -913,17 +1000,17 @@ const closeSettingsModal = () => {
     showSettingsModal.value = false
     selectedMataPelajaran.value = null
     selectedKelas.value = null
-    customJenisNilai.value = []
+    // Tidak perlu reset customJenisNilai karena sekarang global untuk guru
     resetNewJenisNilai()
     cancelEdit()
 }
 
 const loadCustomJenisNilai = async () => {
     try {
+        // Load jenis nilai custom milik guru yang sedang login (tanpa filter mata pelajaran/kelas)
         const response = await axios.get('/api/jenis-nilai', {
             params: {
-                mata_pelajaran_id: selectedMataPelajaran.value,
-                kelas_id: selectedKelas.value
+                // Hanya kirim request tanpa parameter untuk mendapatkan semua jenis nilai guru
             }
         });
         
@@ -938,9 +1025,6 @@ const loadCustomJenisNilai = async () => {
             bobot: Number(jenis.bobot) || 0  // Pastikan bobot adalah number
         }));
         
-        console.log('Loaded custom jenis nilai:', customJenisNilai.value);
-        console.log('Total jenis nilai from API:', jenisNilaiData.length);
-        console.log('Custom jenis nilai only:', customOnly.length);
     } catch (error) {
         console.error('Error loading jenis nilai:', error);
         // Fallback ke array kosong jika API gagal
@@ -948,48 +1032,24 @@ const loadCustomJenisNilai = async () => {
     }
 }
 
-// Method untuk memuat semua custom jenis nilai dari semua mata pelajaran
+// Method untuk memuat semua custom jenis nilai guru yang sedang login
 const loadAllCustomJenisNilai = async () => {
     try {
-        // Kumpulkan semua kombinasi mata pelajaran dan kelas dari progressNilai
-        const allCombinations = [];
-        props.progressNilai.forEach(progress => {
-            progress.kelas_detail.forEach(kelas => {
-                allCombinations.push({
-                    mata_pelajaran_id: progress.mata_pelajaran.id,
-                    kelas_id: kelas.kelas.id
-                });
-            });
+        // Load semua jenis nilai custom milik guru yang sedang login
+        const response = await axios.get('/api/jenis-nilai', {
+            params: {
+                // Hanya ambil jenis nilai custom guru, tanpa filter mata pelajaran/kelas
+            }
         });
         
-        // Load custom jenis nilai untuk semua kombinasi
-        const allCustomJenisNilai = [];
-        for (const combination of allCombinations) {
-            try {
-                const response = await axios.get('/api/jenis-nilai', {
-                    params: combination
-                });
-                
-                const jenisNilaiData = response.data.jenisNilai || response.data.jenis_nilai || [];
-                const customOnly = jenisNilaiData.filter(jenis => jenis.guru_id !== null);
-                
-                allCustomJenisNilai.push(...customOnly);
-            } catch (error) {
-                console.error('Error loading jenis nilai for combination:', combination, error);
-            }
-        }
+        const jenisNilaiData = response.data.jenisNilai || response.data.jenis_nilai || [];
+        const customOnly = jenisNilaiData.filter(jenis => jenis.guru_id !== null);
         
-        // Hilangkan duplikat dan simpan
-        const uniqueCustomJenis = allCustomJenisNilai.filter((jenis, index, self) => 
-            index === self.findIndex(j => j.id === jenis.id)
-        );
-        
-        customJenisNilai.value = uniqueCustomJenis.map(jenis => ({
+        customJenisNilai.value = customOnly.map(jenis => ({
             ...jenis,
             bobot: Number(jenis.bobot) || 0
         }));
         
-        console.log('Loaded all custom jenis nilai:', customJenisNilai.value.length);
     } catch (error) {
         console.error('Error loading all custom jenis nilai:', error);
         customJenisNilai.value = [];
@@ -1020,9 +1080,8 @@ const addJenisNilai = async () => {
         const jenisData = {
             nama: newJenisNilai.value.nama,
             bobot: bobotNumber,  // Pastikan mengirim sebagai number
-            deskripsi: newJenisNilai.value.deskripsi,
-            mata_pelajaran_id: selectedMataPelajaran.value,
-            kelas_id: selectedKelas.value
+            deskripsi: newJenisNilai.value.deskripsi
+            // Hapus mata_pelajaran_id dan kelas_id karena sekarang jenis nilai berlaku untuk semua
         };
         
         const response = await axios.post('/api/jenis-nilai', jenisData);
@@ -1046,8 +1105,12 @@ const addJenisNilai = async () => {
         
     } catch (error) {
         console.error('Error adding jenis nilai:', error);
-        const message = error.response?.data?.message || error.message || 'Gagal menambah jenis nilai';
-        alert(message);
+        
+        const message = error.response?.data?.message || 
+                       error.response?.data?.error ||
+                       error.message || 
+                       'Gagal menambah jenis nilai';
+        alert(`Error: ${message}`);
     } finally {
         isAddingJenisNilai.value = false;
     }
@@ -1118,18 +1181,11 @@ const deleteJenis = async (index) => {
     isDeletingJenis.value = true;
     
     try {
-        console.log('Deleting jenis nilai:', jenisNilai);
-        
         const response = await axios.delete(`/api/jenis-nilai/${jenisNilai.id}`);
-        
-        console.log('Delete response:', response);
         
         if (response.status === 200 && response.data.success) {
             // Hapus dari array lokal setelah berhasil di backend
             customJenisNilai.value.splice(index, 1);
-            
-            console.log('Successfully deleted from frontend array');
-            console.log('Remaining jenis nilai:', customJenisNilai.value.length);
             
             // Reload all custom jenis nilai untuk memastikan sinkronisasi dengan dashboard
             await loadAllCustomJenisNilai();
@@ -1164,34 +1220,13 @@ const saveAllSettings = async () => {
         return
     }
     
-    isSavingSettings.value = true
+    // Karena sekarang menggunakan sistem teacher-global, 
+    // jenis nilai sudah tersimpan otomatis saat ditambah/diubah
+    alert('Pengaturan jenis nilai berhasil disimpan dan akan berlaku untuk semua mata pelajaran yang Anda ajar!');
+    closeSettingsModal();
     
-    try {
-        const settingsData = {
-            mata_pelajaran_id: selectedMataPelajaran.value,
-            kelas_id: selectedKelas.value,
-            jenis_nilai: customJenisNilai.value
-        };
-        
-        const response = await axios.post('/api/jenis-nilai/settings', settingsData);
-        
-        if (response.data.success) {
-            alert('Pengaturan jenis nilai berhasil disimpan!');
-            closeSettingsModal();
-            
-            // Refresh data dashboard
-            window.location.reload();
-        } else {
-            throw new Error(response.data.message || 'Gagal menyimpan pengaturan');
-        }
-        
-    } catch (error) {
-        console.error('Error saving settings:', error);
-        const message = error.response?.data?.message || error.message || 'Gagal menyimpan pengaturan';
-        alert(message);
-    } finally {
-        isSavingSettings.value = false;
-    }
+    // Refresh data dashboard untuk memperbarui tampilan
+    window.location.reload();
 }
 
 const getSelectedMataPelajaranName = () => {

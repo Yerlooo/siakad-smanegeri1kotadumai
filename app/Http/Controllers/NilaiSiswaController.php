@@ -621,37 +621,40 @@ class NilaiSiswaController extends Controller
     {
         $user = auth()->user();
         
-        // Validasi parameter
+        // Validasi parameter - sekarang mata_pelajaran_id dan kelas_id opsional untuk teacher-global
         $request->validate([
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
-            'kelas_id' => 'required|exists:kelas,id'
+            'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
+            'kelas_id' => 'nullable|exists:kelas,id'
         ]);
 
-        // Ambil tahun ajaran dan semester aktif dari settings
-        $tahunAjaran = Setting::get('academic_year', '2024/2025');
-        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+        // Jika ada mata_pelajaran_id dan kelas_id, validasi akses guru
+        if ($request->mata_pelajaran_id && $request->kelas_id) {
+            // Ambil tahun ajaran dan semester aktif dari settings
+            $tahunAjaran = Setting::get('academic_year', '2024/2025');
+            $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
 
-        // Pastikan guru mengajar mata pelajaran ini di kelas ini
-        $jadwal = JadwalPelajaran::where('guru_id', $user->id)
-            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
-            ->where('kelas_id', $request->kelas_id)
-            ->where('semester', $semester)
-            ->where('tahun_ajaran', $tahunAjaran)
-            ->first();
+            // Pastikan guru mengajar mata pelajaran ini di kelas ini
+            $jadwal = JadwalPelajaran::where('guru_id', $user->id)
+                ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
+                ->where('kelas_id', $request->kelas_id)
+                ->where('semester', $semester)
+                ->where('tahun_ajaran', $tahunAjaran)
+                ->first();
 
-        if (!$jadwal && !$user->isKepalaSekolah()) {
-            return response()->json(['error' => 'Akses ditolak'], 403);
+            if (!$jadwal && !$user->isKepalaSekolah()) {
+                return response()->json(['error' => 'Akses ditolak'], 403);
+            }
         }
 
-        // Ambil jenis nilai yang dibuat oleh guru ini untuk mata pelajaran dan kelas ini
-        // atau jenis nilai global (guru_id = null)
-        $jenisNilai = JenisNilai::where(function($query) use ($user, $request) {
+        // Ambil semua jenis nilai yang dibuat oleh guru ini (teacher-global)
+        // atau jenis nilai global sistem (guru_id = null)
+        $jenisNilai = JenisNilai::where(function($query) use ($user) {
                 $query->where('guru_id', $user->id)
-                      ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
-                      ->where('kelas_id', $request->kelas_id);
+                      ->whereNull('mata_pelajaran_id')  // Teacher-global tidak terikat mata pelajaran
+                      ->whereNull('kelas_id');          // Teacher-global tidak terikat kelas
             })
             ->orWhere(function($query) {
-                $query->whereNull('guru_id') // Global jenis nilai
+                $query->whereNull('guru_id')           // Global sistem
                       ->whereNull('mata_pelajaran_id')
                       ->whereNull('kelas_id');
             })
@@ -666,41 +669,29 @@ class NilaiSiswaController extends Controller
     }
 
     /**
-     * Store jenis nilai baru yang dibuat oleh guru
+     * Store jenis nilai baru yang dibuat oleh guru (teacher-global)
      */
     public function storeJenisNilai(Request $request)
     {
         $user = auth()->user();
         
-        // Validasi input
+        // Debug logging
+        \Log::info('Store Jenis Nilai Request', [
+            'user_id' => $user->id,
+            'request_data' => $request->all()
+        ]);
+        
+        // Validasi input - mata_pelajaran_id dan kelas_id tidak diperlukan untuk teacher-global
         $request->validate([
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
-            'kelas_id' => 'required|exists:kelas,id',
             'nama' => 'required|string|max:100',
             'bobot' => 'required|numeric|min:1|max:100',
             'deskripsi' => 'nullable|string|max:255'
         ]);
 
-        // Ambil tahun ajaran dan semester aktif dari settings
-        $tahunAjaran = Setting::get('academic_year', '2024/2025');
-        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
-
-        // Pastikan guru mengajar mata pelajaran ini di kelas ini
-        $jadwal = JadwalPelajaran::where('guru_id', $user->id)
-            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
-            ->where('kelas_id', $request->kelas_id)
-            ->where('semester', $semester)
-            ->where('tahun_ajaran', $tahunAjaran)
-            ->first();
-
-        if (!$jadwal && !$user->isKepalaSekolah()) {
-            return response()->json(['error' => 'Akses ditolak'], 403);
-        }
-
-        // Cek apakah nama jenis nilai sudah ada untuk guru ini di mata pelajaran dan kelas yang sama
+        // Cek apakah nama jenis nilai sudah ada untuk guru ini (teacher-global)
         $existingJenis = JenisNilai::where('guru_id', $user->id)
-            ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
-            ->where('kelas_id', $request->kelas_id)
+            ->whereNull('mata_pelajaran_id')  // Teacher-global
+            ->whereNull('kelas_id')           // Teacher-global
             ->where('nama', $request->nama)
             ->first();
 
@@ -711,10 +702,10 @@ class NilaiSiswaController extends Controller
         try {
             DB::beginTransaction();
 
-            // Cek total bobot saat ini
+            // Cek total bobot saat ini untuk jenis nilai teacher-global
             $totalBobotSekarang = JenisNilai::where('guru_id', $user->id)
-                ->where('mata_pelajaran_id', $request->mata_pelajaran_id)
-                ->where('kelas_id', $request->kelas_id)
+                ->whereNull('mata_pelajaran_id')  // Teacher-global
+                ->whereNull('kelas_id')           // Teacher-global
                 ->where('status', true)
                 ->sum('bobot');
 
@@ -725,7 +716,11 @@ class NilaiSiswaController extends Controller
                 ], 422);
             }
 
-            // Buat jenis nilai baru
+            // Ambil tahun ajaran dan semester aktif dari settings
+            $tahunAjaran = Setting::get('academic_year', '2024/2025');
+            $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+
+            // Buat jenis nilai baru (teacher-global)
             $jenisNilai = JenisNilai::create([
                 'nama' => $request->nama,
                 'kategori' => 'custom',
@@ -733,8 +728,8 @@ class NilaiSiswaController extends Controller
                 'deskripsi' => $request->deskripsi,
                 'status' => true,
                 'guru_id' => $user->id,
-                'mata_pelajaran_id' => $request->mata_pelajaran_id,
-                'kelas_id' => $request->kelas_id,
+                'mata_pelajaran_id' => null,    // Teacher-global: null
+                'kelas_id' => null,             // Teacher-global: null
                 'semester' => $semester,
                 'tahun_ajaran' => $tahunAjaran
             ]);
@@ -788,11 +783,11 @@ class NilaiSiswaController extends Controller
 
             DB::beginTransaction();
 
-            // Cek total bobot jika bobot diubah
+            // Cek total bobot jika bobot diubah (teacher-global)
             if ($jenisNilai->bobot != $request->bobot) {
                 $totalBobotLain = JenisNilai::where('guru_id', $user->id)
-                    ->where('mata_pelajaran_id', $jenisNilai->mata_pelajaran_id)
-                    ->where('kelas_id', $jenisNilai->kelas_id)
+                    ->whereNull('mata_pelajaran_id')  // Teacher-global
+                    ->whereNull('kelas_id')           // Teacher-global
                     ->where('id', '!=', $id)
                     ->where('status', true)
                     ->sum('bobot');

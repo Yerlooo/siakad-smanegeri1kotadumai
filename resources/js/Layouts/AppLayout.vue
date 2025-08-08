@@ -233,7 +233,7 @@
                         <transition name="dropdown-slide">
                             <div v-show="kehadiranDropdownOpen" 
                                  class="mt-1 ml-6 space-y-1 bg-orange-50 rounded-lg p-2 border-l-2 border-orange-200">
-                                <!-- Input Absensi - Hanya untuk Guru -->
+                                <!-- Input Absensi Siswa - Hanya untuk Guru -->
                                 <SidebarLink 
                                     v-if="canAccess(['guru'])"
                                     :href="route('absensi.index')" 
@@ -241,7 +241,18 @@
                                     icon="📋"
                                     class="text-sm pl-2 hover:bg-white transition-colors duration-150"
                                     active-class="bg-orange-100 text-orange-800 font-medium">
-                                    Input Absensi
+                                    Absensi Siswa
+                                </SidebarLink>
+                                
+                                <!-- Absensi Guru (Ketidakhadiran) - Untuk semua guru -->
+                                <SidebarLink 
+                                    v-if="canAccess(['guru'])"
+                                    :href="route('absensi-guru.index')" 
+                                    :active="route().current('absensi-guru.*')"
+                                    icon="👨‍🏫"
+                                    class="text-sm pl-2 hover:bg-white transition-colors duration-150"
+                                    active-class="bg-orange-100 text-orange-800 font-medium">
+                                    Absensi Guru
                                 </SidebarLink>
                                 
                                 <!-- Monitoring Absensi -->
@@ -252,7 +263,18 @@
                                     icon="📊"
                                     class="text-sm pl-2 hover:bg-white transition-colors duration-150"
                                     active-class="bg-orange-100 text-orange-800 font-medium">
-                                    Monitoring Absensi
+                                    Monitoring Absensi Siswa
+                                </SidebarLink>
+                                
+                                <!-- Monitoring Absensi Guru -->
+                                <SidebarLink 
+                                    v-if="canAccess(['kepala_tatausaha', 'tata_usaha'])"
+                                    :href="route('absensi-guru.monitoring')" 
+                                    :active="route().current('absensi-guru.monitoring')"
+                                    icon="👥"
+                                    class="text-sm pl-2 hover:bg-white transition-colors duration-150"
+                                    active-class="bg-orange-100 text-orange-800 font-medium">
+                                    Monitoring Absensi Guru
                                 </SidebarLink>
                             </div>
                         </transition>
