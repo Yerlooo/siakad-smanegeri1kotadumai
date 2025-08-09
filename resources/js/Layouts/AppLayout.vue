@@ -36,7 +36,7 @@
                     </SidebarLink>
 
                     <!-- Data Master Dropdown -->
-                    <div class="mb-2">
+                    <div class="mb-2" v-if="!canAccess(['murid'])">
                         <button @click="toggleDataMasterDropdown" 
                                 :class="{
                                     'bg-green-100 text-green-800 font-medium': isDataMasterActive,

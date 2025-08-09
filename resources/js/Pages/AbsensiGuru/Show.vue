@@ -6,7 +6,7 @@
                     Detail Pengajuan Absensi
                 </h2>
                 <div class="flex space-x-2">
-                    <Link v-if="absensiGuru.status === 'pending'" 
+                    <Link v-if="absensiGuru.status_laporan === 'dilaporkan'" 
                           :href="route('absensi-guru.edit', absensiGuru.id)" 
                           class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
                         Edit
@@ -27,15 +27,15 @@
                         <div class="mb-6 flex justify-between items-start">
                             <div>
                                 <h3 class="text-lg font-medium text-gray-900 mb-2">
-                                    Pengajuan Ketidakhadiran
+                                    Laporan Ketidakhadiran
                                 </h3>
-                                <span :class="getStatusBadgeClass(absensiGuru.status)" 
+                                <span :class="getStatusBadgeClass(absensiGuru.status_laporan)" 
                                       class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full">
-                                    {{ getStatusText(absensiGuru.status) }}
+                                    {{ getStatusText(absensiGuru.status_laporan) }}
                                 </span>
                             </div>
                             <div class="text-right text-sm text-gray-500">
-                                <div>Diajukan: {{ formatDateTime(absensiGuru.created_at) }}</div>
+                                <div>Dilaporkan: {{ formatDateTime(absensiGuru.created_at) }}</div>
                                 <div v-if="absensiGuru.updated_at !== absensiGuru.created_at">
                                     Diperbarui: {{ formatDateTime(absensiGuru.updated_at) }}
                                 </div>
@@ -65,18 +65,15 @@
                                         </span>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Approval Info -->
-                            <div class="space-y-4" v-if="absensiGuru.status !== 'pending'">
-                                <div v-if="absensiGuru.approved_at">
-                                    <label class="block text-sm font-medium text-gray-700">Diproses Tanggal</label>
-                                    <div class="mt-1 text-sm text-gray-900">{{ formatDateTime(absensiGuru.approved_at) }}</div>
+                                <div v-if="absensiGuru.status_laporan === 'diterima' && absensiGuru.penerima">
+                                    <label class="block text-sm font-medium text-gray-700">Diterima Oleh</label>
+                                    <div class="mt-1 text-sm text-gray-900">{{ absensiGuru.penerima.name }}</div>
                                 </div>
 
-                                <div v-if="absensiGuru.approver">
-                                    <label class="block text-sm font-medium text-gray-700">Diproses Oleh</label>
-                                    <div class="mt-1 text-sm text-gray-900">{{ absensiGuru.approver.name }}</div>
+                                <div v-if="absensiGuru.tanggal_diterima">
+                                    <label class="block text-sm font-medium text-gray-700">Tanggal Diterima</label>
+                                    <div class="mt-1 text-sm text-gray-900">{{ formatDateTime(absensiGuru.tanggal_diterima) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -106,7 +103,7 @@
                         </div>
 
                         <!-- Actions -->
-                        <div v-if="absensiGuru.status === 'pending'" class="mt-8 flex justify-end space-x-3">
+                        <div v-if="absensiGuru.status_laporan === 'dilaporkan'" class="mt-8 flex justify-end space-x-3">
                             <button @click="deleteAbsensi" 
                                     class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
                                 Hapus Pengajuan
@@ -166,8 +163,8 @@ const getJenisText = (jenis) => {
 const getJenisBadgeClass = (jenis) => {
     const classMap = {
         'sakit': 'bg-red-100 text-red-800',
-        'izin': 'bg-blue-100 text-blue-800',
-        'dinas': 'bg-purple-100 text-purple-800',
+        'izin': 'bg-yellow-100 text-yellow-800',
+        'dinas': 'bg-blue-100 text-blue-800',
         'cuti': 'bg-green-100 text-green-800'
     }
     return classMap[jenis] || 'bg-gray-100 text-gray-800'
@@ -175,18 +172,16 @@ const getJenisBadgeClass = (jenis) => {
 
 const getStatusText = (status) => {
     const statusMap = {
-        'pending': 'Menunggu Persetujuan',
-        'approved': 'Disetujui',
-        'rejected': 'Ditolak'
+        'dilaporkan': 'Dilaporkan',
+        'diterima': 'Diterima'
     }
     return statusMap[status] || status
 }
 
 const getStatusBadgeClass = (status) => {
     const classMap = {
-        'pending': 'bg-yellow-100 text-yellow-800',
-        'approved': 'bg-green-100 text-green-800',
-        'rejected': 'bg-red-100 text-red-800'
+        'dilaporkan': 'bg-yellow-100 text-yellow-800',
+        'diterima': 'bg-green-100 text-green-800'
     }
     return classMap[status] || 'bg-gray-100 text-gray-800'
 }

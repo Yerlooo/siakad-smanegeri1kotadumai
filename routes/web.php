@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::put('/api/jenis-nilai/{id}', [NilaiSiswaController::class, 'updateJenisNilai'])->name('api.jenis-nilai.update');
             Route::delete('/api/jenis-nilai/{id}', [NilaiSiswaController::class, 'deleteJenisNilai'])->name('api.jenis-nilai.delete');
             Route::post('/api/jenis-nilai/settings', [NilaiSiswaController::class, 'saveJenisNilaiSettings'])->name('api.jenis-nilai.settings');
+            Route::get('/api/status-nilai-dashboard', [NilaiSiswaController::class, 'getStatusNilaiDashboard'])->name('api.status-nilai.dashboard');
         });
     });
     

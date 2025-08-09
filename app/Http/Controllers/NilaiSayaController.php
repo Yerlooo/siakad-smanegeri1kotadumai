@@ -75,23 +75,28 @@ class NilaiSayaController extends Controller
             $nilaiTerbobot = 0;
             
             foreach ($nilaiList as $nilai) {
-                $bobot = $nilai->jenisNilai->bobot;
+                $bobot = $nilai->jenisNilai->bobot ?? 0; // Handle null bobot
                 $totalBobot += $bobot;
                 $nilaiTerbobot += ($nilai->nilai * $bobot / 100);
             }
             
+            // Hanya hitung nilai akhir jika ada bobot yang valid
             if ($totalBobot > 0) {
                 $nilaiAkhir[$mataPelajaranId] = round($nilaiTerbobot, 2);
             }
         }
 
-        // Hitung statistik
-        $statistik = [
-            'total_mapel' => $nilaiPerMapel->count(),
-            'rata_rata' => $nilaiAkhir ? round(array_sum($nilaiAkhir) / count($nilaiAkhir), 2) : 0,
-            'nilai_tertinggi' => $nilaiAkhir ? max($nilaiAkhir) : 0,
-            'nilai_terendah' => $nilaiAkhir ? min($nilaiAkhir) : 0,
-        ];
+        // Hitung statistik menggunakan method helper
+        $statistik = $this->hitungStatistik($nilaiAkhir, $nilaiPerMapel->count());
+
+        // Debug logging untuk development
+        if (config('app.debug')) {
+            \Log::info('NilaiSaya Debug - Siswa: ' . $siswa->nama_lengkap, [
+                'nilai_akhir_count' => count($nilaiAkhir),
+                'nilai_akhir' => $nilaiAkhir,
+                'statistik' => $statistik
+            ]);
+        }
 
         return Inertia::render('Nilai/NilaiSaya', [
             'siswa' => $siswa,
@@ -141,5 +146,48 @@ class NilaiSayaController extends Controller
         // ... (implementasi export PDF, bisa ditambahkan nanti)
         
         return response()->json(['message' => 'Export PDF belum diimplementasikan']);
+    }
+
+    /**
+     * Helper method untuk menghitung statistik nilai
+     */
+    private function hitungStatistik($nilaiAkhir, $totalMapel)
+    {
+        // Validasi input
+        if (empty($nilaiAkhir) || !is_array($nilaiAkhir)) {
+            return [
+                'total_mapel' => $totalMapel,
+                'rata_rata' => 0,
+                'nilai_tertinggi' => 0,
+                'nilai_terendah' => 0,
+            ];
+        }
+
+        // Filter nilai yang valid (numeric)
+        $nilaiValid = array_filter($nilaiAkhir, function($nilai) {
+            return is_numeric($nilai) && $nilai >= 0;
+        });
+
+        // Jika tidak ada nilai valid
+        if (empty($nilaiValid)) {
+            return [
+                'total_mapel' => $totalMapel,
+                'rata_rata' => 0,
+                'nilai_tertinggi' => 0,
+                'nilai_terendah' => 0,
+            ];
+        }
+
+        // Hitung statistik
+        $rataRata = round(array_sum($nilaiValid) / count($nilaiValid), 2);
+        $nilaiTertinggi = max($nilaiValid);
+        $nilaiTerendah = min($nilaiValid);
+
+        return [
+            'total_mapel' => $totalMapel,
+            'rata_rata' => $rataRata,
+            'nilai_tertinggi' => $nilaiTertinggi,
+            'nilai_terendah' => $nilaiTerendah,
+        ];
     }
 }

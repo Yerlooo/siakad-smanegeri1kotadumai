@@ -47,7 +47,21 @@ class NilaiSiswaController extends Controller
 
         // Statistik progress input nilai
         $progressNilai = [];
-        $jenisNilaiAktif = JenisNilai::aktif()->get();
+        // Ambil jenis nilai yang sudah dikonfigurasi oleh guru yang sedang login (teacher-global atau global sistem)
+        $jenisNilaiAktif = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get();
         $totalJenisNilai = $jenisNilaiAktif->count();
         
         foreach ($mataPelajaranGuru as $mataPelajaranId => $jadwalList) {
@@ -162,7 +176,22 @@ class NilaiSiswaController extends Controller
             ];
         }
 
-        $jenisNilai = JenisNilai::aktif()->get()->map(function($jenis) {
+        // Ambil jenis nilai yang sudah dikonfigurasi oleh guru yang sedang login (teacher-global atau global sistem)
+        $jenisNilai = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get()
+            ->map(function($jenis) {
             return [
                 'id' => $jenis->id,
                 'nama' => $jenis->nama,
@@ -429,8 +458,21 @@ class NilaiSiswaController extends Controller
             ->where('tahun_ajaran', $tahunAjaran)
             ->get();
 
-        // Ambil semua jenis nilai
-        $jenisNilai = JenisNilai::aktif()->get();
+        // Ambil jenis nilai yang sudah diatur oleh guru yang sedang login (teacher-global atau global sistem)
+        $jenisNilai = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get();
 
         return Inertia::render('Nilai/Detail', [
             'mataPelajaran' => $mataPelajaran,
@@ -536,7 +578,21 @@ class NilaiSiswaController extends Controller
             ->where('tahun_ajaran', $tahunAjaran)
             ->get();
 
-        $jenisNilai = JenisNilai::aktif()->get();
+        // Ambil jenis nilai yang sudah diatur oleh guru yang sedang login (teacher-global atau global sistem)
+        $jenisNilai = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get();
 
         $fileName = 'Nilai_' . str_replace(' ', '_', $mataPelajaran->nama_mapel) . '_' . 
                    str_replace('-', '_', $kelas->nama_kelas) . '_' . date('Y-m-d') . '.xlsx';
@@ -590,7 +646,21 @@ class NilaiSiswaController extends Controller
             ->where('tahun_ajaran', $tahunAjaran)
             ->get();
 
-        $jenisNilai = JenisNilai::aktif()->get();
+        // Ambil jenis nilai yang sudah diatur oleh guru yang sedang login (teacher-global atau global sistem)
+        $jenisNilai = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get();
 
         // Siapkan data untuk PDF
         $data = [
@@ -952,5 +1022,174 @@ class NilaiSiswaController extends Controller
             DB::rollback();
             return response()->json(['error' => 'Gagal menyimpan pengaturan: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get status nilai dashboard for updating progress indicators
+     */
+    public function getStatusNilaiDashboard()
+    {
+        $user = auth()->user();
+        
+        // Jika bukan guru, return error
+        if (!$user->isGuru() && !$user->isKepalaSekolah()) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
+
+        // Ambil tahun ajaran dan semester aktif dari settings
+        $tahunAjaran = Setting::get('academic_year', '2024/2025');
+        $semester = strtolower(Setting::get('academic_semester', 'ganjil'));
+
+        // Ambil mata pelajaran yang diajar guru ini
+        $mataPelajaranGuru = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
+            ->where('guru_id', $user->id)
+            ->where('semester', $semester)
+            ->where('tahun_ajaran', $tahunAjaran)
+            ->where('status', true)
+            ->get()
+            ->groupBy('mata_pelajaran_id');
+
+        // Ambil jenis nilai yang sudah dikonfigurasi oleh guru yang sedang login
+        $jenisNilaiAktif = JenisNilai::aktif()
+            ->where(function($query) use ($user) {
+                // Jenis nilai yang dibuat oleh guru ini (teacher-global)
+                $query->where('guru_id', $user->id)
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->orWhere(function($query) {
+                // Jenis nilai global sistem
+                $query->whereNull('guru_id')
+                      ->whereNull('mata_pelajaran_id')
+                      ->whereNull('kelas_id');
+            })
+            ->get();
+
+        // Build progress data dengan status untuk setiap kelas
+        $progressData = [];
+        
+        foreach ($mataPelajaranGuru as $mataPelajaranId => $jadwalList) {
+            $mataPelajaran = $jadwalList->first()->mataPelajaran;
+            
+            $kelasDetail = [];
+            foreach ($jadwalList as $jadwal) {
+                $totalSiswa = $jadwal->kelas->siswa()->count();
+                
+                // Ambil jenis nilai untuk guru ini (prioritas: specific > teacher-global > system global)
+                $jenisNilaiKelas = JenisNilai::where(function($query) use ($user, $mataPelajaranId, $jadwal) {
+                        // 1. Specific untuk mata pelajaran dan kelas ini
+                        $query->where('guru_id', $user->id)
+                              ->where('mata_pelajaran_id', $mataPelajaranId)
+                              ->where('kelas_id', $jadwal->kelas_id);
+                    })
+                    ->orWhere(function($query) use ($user) {
+                        // 2. Teacher-global (berlaku untuk semua mata pelajaran guru ini)
+                        $query->where('guru_id', $user->id)
+                              ->whereNull('mata_pelajaran_id')
+                              ->whereNull('kelas_id');
+                    })
+                    ->orWhere(function($query) {
+                        // 3. System global (fallback)
+                        $query->whereNull('guru_id')
+                              ->whereNull('mata_pelajaran_id')
+                              ->whereNull('kelas_id');
+                    })
+                    ->where('status', true)
+                    ->get();
+                
+                $totalJenisNilaiKelas = $jenisNilaiKelas->count();
+                
+                if ($totalSiswa > 0 && $totalJenisNilaiKelas > 0) {
+                    // Hitung progress berdasarkan kelengkapan jenis nilai
+                    $siswaIds = $jadwal->kelas->siswa->pluck('id');
+                    
+                    // Hitung progress count
+                    $progressCount = 0;
+                    foreach ($siswaIds as $siswaId) {
+                        $jenisNilaiTerisi = NilaiSiswa::where('mata_pelajaran_id', $mataPelajaranId)
+                            ->where('siswa_id', $siswaId)
+                            ->where('semester', $semester)
+                            ->where('tahun_ajaran', $tahunAjaran)
+                            ->whereIn('jenis_nilai_id', $jenisNilaiKelas->pluck('id'))
+                            ->distinct('jenis_nilai_id')
+                            ->count();
+                        
+                        $progressCount += ($jenisNilaiTerisi / $totalJenisNilaiKelas);
+                    }
+                    
+                    $progressPersen = round(($progressCount / $totalSiswa) * 100);
+                    
+                    // Hitung siswa yang sudah lengkap semua jenis nilainya
+                    $siswaLengkap = 0;
+                    foreach ($siswaIds as $siswaId) {
+                        $jenisNilaiTerisi = NilaiSiswa::where('mata_pelajaran_id', $mataPelajaranId)
+                            ->where('siswa_id', $siswaId)
+                            ->where('semester', $semester)
+                            ->where('tahun_ajaran', $tahunAjaran)
+                            ->whereIn('jenis_nilai_id', $jenisNilaiKelas->pluck('id'))
+                            ->distinct('jenis_nilai_id')
+                            ->count();
+                        
+                        if ($jenisNilaiTerisi == $totalJenisNilaiKelas) {
+                            $siswaLengkap++;
+                        }
+                    }
+                    
+                    // Generate status untuk setiap jenis nilai
+                    $statusJenisNilai = [];
+                    foreach ($jenisNilaiKelas as $jenisNilai) {
+                        $nilaiStatus = NilaiSiswa::where('mata_pelajaran_id', $mataPelajaranId)
+                            ->where('jenis_nilai_id', $jenisNilai->id)
+                            ->where('semester', $semester)
+                            ->where('tahun_ajaran', $tahunAjaran)
+                            ->whereIn('siswa_id', $siswaIds)
+                            ->get();
+                        
+                        $totalNilai = $nilaiStatus->count();
+                        $finalCount = $nilaiStatus->where('status', 'final')->count();
+                        $draftCount = $nilaiStatus->where('status', 'draft')->count();
+                        
+                        $statusJenisNilai[] = [
+                            'jenis_nilai_id' => $jenisNilai->id,
+                            'jenis_nilai_nama' => $jenisNilai->nama,
+                            'total_siswa' => $totalSiswa,
+                            'total_dinilai' => $totalNilai,
+                            'final_count' => $finalCount,
+                            'draft_count' => $draftCount,
+                            'belum_dinilai' => $totalSiswa - $totalNilai,
+                            'is_complete' => $totalNilai == $totalSiswa,
+                            'is_all_final' => $finalCount == $totalSiswa,
+                            'completion_percentage' => $totalSiswa > 0 ? round(($totalNilai / $totalSiswa) * 100) : 0,
+                            'final_percentage' => $totalSiswa > 0 ? round(($finalCount / $totalSiswa) * 100) : 0
+                        ];
+                    }
+                } else {
+                    $progressPersen = 0;
+                    $siswaLengkap = 0;
+                    $statusJenisNilai = [];
+                }
+                
+                $kelasDetail[] = [
+                    'kelas_id' => $jadwal->kelas->id,
+                    'kelas_nama' => $jadwal->kelas->nama_kelas,
+                    'total_siswa' => $totalSiswa,
+                    'nilai_selesai' => $siswaLengkap,
+                    'progress_persen' => $progressPersen,
+                    'status_jenis_nilai' => $statusJenisNilai
+                ];
+            }
+            
+            $progressData[] = [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'mata_pelajaran_nama' => $mataPelajaran->nama_mapel,
+                'kelas_detail' => $kelasDetail
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $progressData,
+            'timestamp' => now()->toISOString()
+        ]);
     }
 }

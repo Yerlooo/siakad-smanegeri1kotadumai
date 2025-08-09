@@ -2,13 +2,23 @@
     <Head title="SIAKAD SMANSA" />
     <AppLayout title="Dashboard Input Nilai">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>
-                📊 Dashboard Input Nilai
-            </h2>
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    📊 Dashboard Input Nilai
+                </h2>
+                <button @click="refreshStatusData" 
+                        :disabled="isRefreshing"
+                        class="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                    <svg :class="{'animate-spin': isRefreshing}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span class="text-sm">{{ isRefreshing ? 'Memuat...' : 'Refresh' }}</span>
+                </button>
+            </div>
         </template>
 
         <div class="py-6 sm:py-12">
@@ -24,7 +34,7 @@
                             </div>
                             <div class="ml-3 sm:ml-4">
                                 <h3 class="text-base sm:text-lg font-semibold">Total Mata Pelajaran</h3>
-                                <p class="text-xl sm:text-2xl font-bold">{{ progressNilai.length }}</p>
+                                <p class="text-xl sm:text-2xl font-bold">{{ reactiveProgressNilai.length }}</p>
                             </div>
                         </div>
                     </div>
@@ -93,7 +103,7 @@
                 <!-- Progress per Mata Pelajaran -->
                 <div class="space-y-6">
                     <!-- Info untuk guru yang belum punya jadwal -->
-                    <div v-if="progressNilai.length === 0" class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                    <div v-if="reactiveProgressNilai.length === 0" class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
                                 <svg class="w-6 h-6 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -105,7 +115,7 @@
                                 <div class="text-sm text-blue-700">
                                     <p class="mb-3">Sistem ini memungkinkan Anda untuk mengelola nilai siswa dengan mudah dan efisien.</p>
                                     
-                                    <div v-if="progressNilai.length === 0" class="bg-white bg-opacity-50 rounded-lg p-4">
+                                    <div v-if="reactiveProgressNilai.length === 0" class="bg-white bg-opacity-50 rounded-lg p-4">
                                         <p class="font-medium mb-2">📋 Untuk memulai, pastikan:</p>
                                         <ul class="list-disc pl-5 space-y-1">
                                             <li>Anda sudah login sebagai guru atau kepala tata usaha</li>
@@ -119,7 +129,7 @@
                         </div>
                     </div>
 
-                    <div v-for="progress in progressNilai" :key="progress.mata_pelajaran.id" 
+                    <div v-for="progress in reactiveProgressNilai" :key="progress.mata_pelajaran.id" 
                          class="bg-white overflow-hidden shadow-lg rounded-lg border border-gray-200">
                         <div class="p-6">
                             <!-- Header Mata Pelajaran -->
@@ -162,7 +172,7 @@
                                     
                                     <div class="mb-3">
                                         <div class="flex justify-between text-xs sm:text-sm text-gray-600 mb-1">
-                                            <span>{{ kelas.nilai_selesai }} dari {{ kelas.total_siswa }} siswa</span>
+                                            <span>{{ getCompletedJenisNilaiCount(kelas, getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length) }} dari {{ getJenisNilaiForMataPelajaranKelas(progress.mata_pelajaran.id, kelas.kelas.id).length }} jenis nilai selesai</span>
                                         </div>
                                         <div class="w-full bg-gray-200 rounded-full h-2">
                                             <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -237,7 +247,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div v-if="progressNilai.length === 0" class="text-center py-8 sm:py-12">
+                <div v-if="reactiveProgressNilai.length === 0" class="text-center py-8 sm:py-12">
                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
                         <svg class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -652,6 +662,9 @@ const props = defineProps({
     jenisNilai: Array
 })
 
+// Create reactive copy of progressNilai for updates
+const reactiveProgressNilai = ref([])
+
 const showInputModal = ref(false)
 const selectedMataPelajaran = ref(null)
 const selectedKelas = ref(null)
@@ -673,9 +686,10 @@ const editingJenis = ref({})
 const isAddingJenisNilai = ref(false)
 const isSavingEdit = ref(false)
 const isDeletingJenis = ref(false)
+const isRefreshing = ref(false)
 
 const totalKelas = computed(() => {
-    return props.progressNilai.reduce((total, progress) => total + progress.total_kelas, 0)
+    return reactiveProgressNilai.value.reduce((total, progress) => total + progress.total_kelas, 0)
 })
 
 const totalJenisNilaiCustom = computed(() => {
@@ -683,11 +697,10 @@ const totalJenisNilaiCustom = computed(() => {
 })
 
 const totalBobot = computed(() => {
-    const total = customJenisNilai.value.reduce((total, jenis) => {
+    return customJenisNilai.value.reduce((total, jenis) => {
         const bobot = Number(jenis.bobot) || 0;
         return total + bobot;
     }, 0);
-    return total;
 })
 
 // Computed property untuk mendapatkan jenis nilai custom untuk modal yang sedang aktif
@@ -732,11 +745,33 @@ const getJenisNilaiProgress = (jenisNilaiId) => {
     return null
 }
 
+// Function to get completed jenis nilai count for a class
+const getCompletedJenisNilaiCount = (kelas, totalJenisNilai) => {
+    if (!kelas.status_jenis_nilai || kelas.status_jenis_nilai.length === 0) {
+        // Fallback: estimate based on progress percentage
+        return Math.floor((kelas.progress_persen / 100) * totalJenisNilai)
+    }
+    
+    // Count jenis nilai that are fully completed (all students have final grades)
+    return kelas.status_jenis_nilai.filter(status => status.is_all_final).length
+}
+
 const getStatusIndicator = (kelas, jenisNilaiId) => {
-    if (!kelas.status_jenis_nilai) return null
+    // Jika tidak ada status_jenis_nilai atau kosong, gunakan fallback
+    if (!kelas.status_jenis_nilai || kelas.status_jenis_nilai.length === 0) {
+        // Gunakan progress_persen sebagai fallback sementara
+        if (kelas.progress_persen && kelas.progress_persen > 0) {
+            if (kelas.progress_persen >= 100) {
+                return { icon: '✓', class: 'bg-green-500 text-white' }
+            } else {
+                return { icon: '~', class: 'bg-yellow-500 text-white' }
+            }
+        }
+        return null;
+    }
     
     const status = kelas.status_jenis_nilai.find(s => s.jenis_nilai_id === jenisNilaiId)
-    if (!status) return null
+    if (!status) return null;
     
     if (status.is_all_final) {
         return { icon: '✓', class: 'bg-green-500 text-white' }
@@ -748,7 +783,15 @@ const getStatusIndicator = (kelas, jenisNilaiId) => {
 }
 
 const getButtonClass = (kelas, jenisNilaiId) => {
-    if (!kelas.status_jenis_nilai) {
+    if (!kelas.status_jenis_nilai || kelas.status_jenis_nilai.length === 0) {
+        // Gunakan progress_persen sebagai fallback
+        if (kelas.progress_persen && kelas.progress_persen > 0) {
+            if (kelas.progress_persen >= 100) {
+                return 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200'
+            } else {
+                return 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200'
+            }
+        }
         return 'bg-blue-50 text-blue-600 hover:bg-blue-100'
     }
     
@@ -767,7 +810,7 @@ const getButtonClass = (kelas, jenisNilaiId) => {
 }
 
 const getStatusTooltip = (kelas, jenisNilaiId) => {
-    if (!kelas.status_jenis_nilai) {
+    if (!kelas.status_jenis_nilai || kelas.status_jenis_nilai.length === 0) {
         const jenis = customJenisNilai.value.find(j => j.id === jenisNilaiId)
         return `Input ${jenis?.nama || 'Nilai'}`
     }
@@ -856,8 +899,8 @@ const getModalStatusBadge = (jenisNilaiId) => {
 }
 
 const getModalStatusDetail = (jenisNilaiId) => {
+    // Jika tidak ada kelas atau mata pelajaran yang dipilih
     if (!selectedKelas.value || !selectedMataPelajaran.value) {
-        // Jika tidak ada kelas atau mata pelajaran yang dipilih, tampilkan status default
         return {
             jenis_nilai_id: jenisNilaiId,
             total_siswa: 0,
@@ -867,13 +910,14 @@ const getModalStatusDetail = (jenisNilaiId) => {
             belum_dinilai: 0,
             is_all_final: false,
             progress: 0,
-            statusText: 'Pilih Kelas & Mata Pelajaran',
+            statusText: 'Pilih untuk Input',
             statusClass: 'bg-blue-100 text-blue-800',
             progressClass: 'bg-blue-400'
         }
     }
     
     const kelasDetail = getSelectedKelasDetail()
+    
     if (!kelasDetail) {
         return {
             jenis_nilai_id: jenisNilaiId,
@@ -891,6 +935,7 @@ const getModalStatusDetail = (jenisNilaiId) => {
     }
     
     const status = kelasDetail.status_jenis_nilai?.find(s => s.jenis_nilai_id === jenisNilaiId)
+    
     if (!status) {
         // Jika tidak ada status untuk jenis nilai ini di kelas yang dipilih, buat status default
         return {
@@ -926,22 +971,25 @@ const getModalStatusDetail = (jenisNilaiId) => {
         progressClass = 'bg-gray-400'
     }
     
-    return {
+    const result = {
         ...status,
         progress: Math.round(progress),
         statusText,
         statusClass,
         progressClass
-    }
+    };
+    
+    return result;
 }
 
 const getSelectedKelasDetail = () => {
     if (!selectedMataPelajaran.value || !selectedKelas.value) return null
     
-    const mataPelajaran = props.progressNilai.find(p => p.mata_pelajaran.id === selectedMataPelajaran.value)
+    const mataPelajaran = reactiveProgressNilai.value.find(p => p.mata_pelajaran.id === selectedMataPelajaran.value)
     if (!mataPelajaran) return null
     
-    return mataPelajaran.kelas_detail.find(k => k.kelas.id === selectedKelas.value)
+    const kelasDetail = mataPelajaran.kelas_detail.find(k => k.kelas.id === selectedKelas.value)
+    return kelasDetail || null
 }
 
 const inputNilai = (mataPelajaranId, kelasId, jenisNilaiId) => {
@@ -1008,14 +1056,10 @@ const closeSettingsModal = () => {
 const loadCustomJenisNilai = async () => {
     try {
         // Load jenis nilai custom milik guru yang sedang login (tanpa filter mata pelajaran/kelas)
-        const response = await axios.get('/api/jenis-nilai', {
-            params: {
-                // Hanya kirim request tanpa parameter untuk mendapatkan semua jenis nilai guru
-            }
-        });
+        const response = await axios.get('/api/jenis-nilai');
         
         // Perbaiki nama field dari API response dan pastikan bobot adalah number
-        const jenisNilaiData = response.data.jenisNilai || response.data.jenis_nilai || [];
+        const jenisNilaiData = response.data.jenisNilai || [];
         
         // Filter hanya jenis nilai custom (yang punya guru_id, bukan global)
         const customOnly = jenisNilaiData.filter(jenis => jenis.guru_id !== null);
@@ -1027,8 +1071,15 @@ const loadCustomJenisNilai = async () => {
         
     } catch (error) {
         console.error('Error loading jenis nilai:', error);
-        // Fallback ke array kosong jika API gagal
-        customJenisNilai.value = [];
+        // Fallback ke data props jika API gagal
+        if (props.jenisNilai && props.jenisNilai.length > 0) {
+            customJenisNilai.value = props.jenisNilai.map(jenis => ({
+                ...jenis,
+                bobot: Number(jenis.bobot) || 0
+            }));
+        } else {
+            customJenisNilai.value = [];
+        }
     }
 }
 
@@ -1036,13 +1087,9 @@ const loadCustomJenisNilai = async () => {
 const loadAllCustomJenisNilai = async () => {
     try {
         // Load semua jenis nilai custom milik guru yang sedang login
-        const response = await axios.get('/api/jenis-nilai', {
-            params: {
-                // Hanya ambil jenis nilai custom guru, tanpa filter mata pelajaran/kelas
-            }
-        });
+        const response = await axios.get('/api/jenis-nilai');
         
-        const jenisNilaiData = response.data.jenisNilai || response.data.jenis_nilai || [];
+        const jenisNilaiData = response.data.jenisNilai || [];
         const customOnly = jenisNilaiData.filter(jenis => jenis.guru_id !== null);
         
         customJenisNilai.value = customOnly.map(jenis => ({
@@ -1052,7 +1099,15 @@ const loadAllCustomJenisNilai = async () => {
         
     } catch (error) {
         console.error('Error loading all custom jenis nilai:', error);
-        customJenisNilai.value = [];
+        // Fallback ke data props jika API gagal
+        if (props.jenisNilai && props.jenisNilai.length > 0) {
+            customJenisNilai.value = props.jenisNilai.map(jenis => ({
+                ...jenis,
+                bobot: Number(jenis.bobot) || 0
+            }));
+        } else {
+            customJenisNilai.value = [];
+        }
     }
 }
 
@@ -1231,13 +1286,79 @@ const saveAllSettings = async () => {
 
 const getSelectedMataPelajaranName = () => {
     if (!selectedMataPelajaran.value) return ''
-    const mataPelajaran = props.progressNilai.find(p => p.mata_pelajaran.id === selectedMataPelajaran.value)
+    const mataPelajaran = reactiveProgressNilai.value.find(p => p.mata_pelajaran.id === selectedMataPelajaran.value)
     return mataPelajaran ? mataPelajaran.mata_pelajaran.nama_mapel : ''
+}
+
+// Function to load status nilai for all classes
+const loadAllStatusNilai = async () => {
+    try {
+        const response = await axios.get('/api/status-nilai-dashboard');
+        
+        if (response.data.success) {
+            // Update reactiveProgressNilai dengan status data yang baru
+            const statusData = response.data.data;
+            
+            // Merge status data ke dalam reactiveProgressNilai yang sudah ada
+            reactiveProgressNilai.value.forEach((progress, progressIndex) => {
+                const matchingStatus = statusData.find(status => 
+                    status.mata_pelajaran_id === progress.mata_pelajaran.id
+                );
+                
+                if (matchingStatus) {
+                    progress.kelas_detail.forEach((kelasDetail, kelasIndex) => {
+                        const matchingKelas = matchingStatus.kelas_detail.find(kelas => 
+                            kelas.kelas_id === kelasDetail.kelas.id
+                        );
+                        
+                        if (matchingKelas) {
+                            // Update status_jenis_nilai dengan data terbaru dari API
+                            kelasDetail.status_jenis_nilai = matchingKelas.status_jenis_nilai;
+                            kelasDetail.progress_persen = matchingKelas.progress_persen;
+                            kelasDetail.nilai_selesai = matchingKelas.nilai_selesai;
+                        }
+                    });
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error loading status nilai:', error);
+        // Fallback: tetap gunakan data yang ada dari props
+    }
+}
+
+// Function to refresh status data manually
+const refreshStatusData = async () => {
+    isRefreshing.value = true;
+    try {
+        await loadAllStatusNilai();
+    } catch (error) {
+        console.error('Error during refresh:', error);
+        alert('Gagal memuat data terbaru. Silakan coba lagi.');
+    } finally {
+        isRefreshing.value = false;
+    }
 }
 
 // Load semua custom jenis nilai saat component dimount
 onMounted(() => {
-    loadAllCustomJenisNilai()
+    // Initialize reactive progress data with deep copy of props
+    reactiveProgressNilai.value = JSON.parse(JSON.stringify(props.progressNilai || []));
+    
+    // Muat data jenis nilai dari props yang dikirim dari backend
+    if (props.jenisNilai && props.jenisNilai.length > 0) {
+        customJenisNilai.value = props.jenisNilai.map(jenis => ({
+            ...jenis,
+            bobot: Number(jenis.bobot) || 0
+        }));
+    } else {
+        // Jika tidak ada data dari props, coba load dari API
+        loadAllCustomJenisNilai();
+    }
+    
+    // Load status nilai untuk setiap kelas
+    loadAllStatusNilai();
 })
 </script>
 

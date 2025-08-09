@@ -154,8 +154,8 @@ const getJenisText = (jenis) => {
 const getJenisBadgeClass = (jenis) => {
     const classMap = {
         'sakit': 'bg-red-100 text-red-800',
-        'izin': 'bg-blue-100 text-blue-800',
-        'dinas': 'bg-purple-100 text-purple-800',
+        'izin': 'bg-yellow-100 text-yellow-800',
+        'dinas': 'bg-blue-100 text-blue-800',
         'cuti': 'bg-green-100 text-green-800'
     }
     return classMap[jenis] || 'bg-gray-100 text-gray-800'
@@ -163,7 +163,7 @@ const getJenisBadgeClass = (jenis) => {
 
 const getStatusText = (status) => {
     const statusMap = {
-        'dilaporkan': 'Telah Dilaporkan',
+        'dilaporkan': 'Dilaporkan',
         'diterima': 'Diterima'
     }
     return statusMap[status] || status
@@ -171,14 +171,14 @@ const getStatusText = (status) => {
 
 const getStatusBadgeClass = (status) => {
     const classMap = {
-        'dilaporkan': 'bg-blue-100 text-blue-800',
+        'dilaporkan': 'bg-yellow-100 text-yellow-800',
         'diterima': 'bg-green-100 text-green-800'
     }
     return classMap[status] || 'bg-gray-100 text-gray-800'
 }
 
 const deleteAbsensi = (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus laporan ketidakhadiran ini?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus laporan ini?')) {
         router.delete(route('absensi-guru.destroy', id))
     }
 }

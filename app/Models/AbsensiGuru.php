@@ -109,6 +109,15 @@ class AbsensiGuru extends Model
     }
 
     /**
+     * Scope untuk filter berdasarkan bulan
+     */
+    public function scopeByBulan($query, $bulan, $tahun)
+    {
+        return $query->whereMonth('tanggal', $bulan)
+                    ->whereYear('tanggal', $tahun);
+    }
+
+    /**
      * Scope untuk filter berdasarkan jenis ketidakhadiran
      */
     public function scopeByJenis($query, $jenis)
@@ -117,33 +126,41 @@ class AbsensiGuru extends Model
     }
 
     /**
-     * Scope untuk filter berdasarkan bulan
+     * Accessor untuk format tanggal Indonesia
      */
-    public function scopeByMonth($query, $month, $year = null)
+    public function getTanggalIndonesiaAttribute()
     {
-        $query->whereMonth('tanggal', $month);
+        return $this->tanggal->format('d/m/Y');
+    }
+
+    /**
+     * Accessor untuk format tanggal diterima Indonesia
+     */
+    public function getTanggalDiterimaIndonesiaAttribute()
+    {
+        return $this->tanggal_diterima ? $this->tanggal_diterima->format('d/m/Y H:i') : '-';
+    }
+
+    /**
+     * Method untuk menghitung hari kerja yang terlewati
+     */
+    public function getHariKerjaAttribute()
+    {
+        $startDate = $this->tanggal;
+        $endDate = now();
         
-        if ($year) {
-            $query->whereYear('tanggal', $year);
+        $hariKerja = 0;
+        $current = $startDate->copy();
+        
+        while ($current->lte($endDate)) {
+            // Hitung hanya hari Senin-Jumat (1-5)
+            if ($current->dayOfWeek >= 1 && $current->dayOfWeek <= 5) {
+                $hariKerja++;
+            }
+            $current->addDay();
         }
         
-        return $query;
-    }
-
-    /**
-     * Scope untuk filter berdasarkan tahun
-     */
-    public function scopeByYear($query, $year)
-    {
-        return $query->whereYear('tanggal', $year);
-    }
-
-    /**
-     * Scope untuk filter berdasarkan rentang tanggal
-     */
-    public function scopeByDateRange($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('tanggal', [$startDate, $endDate]);
+        return $hariKerja;
     }
 
     /**

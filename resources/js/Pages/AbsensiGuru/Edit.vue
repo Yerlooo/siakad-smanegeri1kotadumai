@@ -52,7 +52,7 @@
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     :class="{ 'border-red-500': errors.jenis_ketidakhadiran }"
                                 >
-                                    <option value="">Pilih Jenis Ketidakhadiran</option>
+                                    <option value="">-- Pilih Jenis Ketidakhadiran --</option>
                                     <option value="sakit">Sakit</option>
                                     <option value="izin">Izin</option>
                                     <option value="dinas">Dinas Luar Kota</option>

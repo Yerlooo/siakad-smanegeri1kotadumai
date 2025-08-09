@@ -24,28 +24,25 @@
                     <!-- Filter Section -->
                     <div class="p-6 bg-white border-b border-gray-200">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">
-                            Filter Pencarian
+                            Filter Data
                         </h3>
-                        
-                        <form @submit.prevent="applyFilters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <!-- Status Filter -->
+                        <form @submit.prevent="applyFilter" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                            <!-- Status Laporan -->
                             <div>
-                                <label for="status_laporan" class="block text-sm font-medium text-gray-700 mb-1">Status Laporan</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Status Laporan</label>
                                 <select v-model="filterForm.status_laporan" 
-                                        id="status_laporan"
-                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Semua Status</option>
-                                    <option value="dilaporkan">Telah Dilaporkan</option>
+                                    <option value="dilaporkan">Dilaporkan</option>
                                     <option value="diterima">Diterima</option>
                                 </select>
                             </div>
 
-                            <!-- Jenis Ketidakhadiran Filter -->
+                            <!-- Jenis Ketidakhadiran -->
                             <div>
-                                <label for="jenis_ketidakhadiran" class="block text-sm font-medium text-gray-700 mb-1">Jenis</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Jenis</label>
                                 <select v-model="filterForm.jenis_ketidakhadiran" 
-                                        id="jenis_ketidakhadiran"
-                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Semua Jenis</option>
                                     <option value="sakit">Sakit</option>
                                     <option value="izin">Izin</option>
@@ -54,12 +51,35 @@
                                 </select>
                             </div>
 
-                            <!-- Guru Filter -->
+                            <!-- Bulan -->
                             <div>
-                                <label for="guru_id" class="block text-sm font-medium text-gray-700 mb-1">Guru</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Bulan</label>
+                                <select v-model="filterForm.bulan" 
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Semua Bulan</option>
+                                    <option v-for="(nama, value) in bulanOptions" :key="value" :value="value">
+                                        {{ nama }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Tahun -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tahun</label>
+                                <select v-model="filterForm.tahun" 
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Semua Tahun</option>
+                                    <option v-for="year in tahunOptions" :key="year" :value="year">
+                                        {{ year }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Guru -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Guru</label>
                                 <select v-model="filterForm.guru_id" 
-                                        id="guru_id"
-                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Semua Guru</option>
                                     <option v-for="guru in daftarGuru" :key="guru.id" :value="guru.id">
                                         {{ guru.name }}
@@ -67,44 +87,23 @@
                                 </select>
                             </div>
 
-                            <!-- Bulan/Tahun Filter -->
-                            <div>
-                                <label for="bulan" class="block text-sm font-medium text-gray-700 mb-1">Bulan/Tahun</label>
-                                <div class="flex space-x-2">
-                                    <select v-model="filterForm.bulan" 
-                                            class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Bulan</option>
-                                        <option v-for="(nama, nilai) in bulanOptions" :key="nilai" :value="nilai">
-                                            {{ nama }}
-                                        </option>
-                                    </select>
-                                    <select v-model="filterForm.tahun" 
-                                            class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Tahun</option>
-                                        <option v-for="tahun in tahunOptions" :key="tahun" :value="tahun">
-                                            {{ tahun }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Filter Buttons -->
-                            <div class="md:col-span-2 lg:col-span-4 flex space-x-3">
+                            <!-- Tombol Filter -->
+                            <div class="flex items-end">
                                 <button type="submit" 
-                                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                    Terapkan Filter
-                                </button>
-                                <button type="button" 
-                                        @click="resetFilters"
-                                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                                    Reset
+                                        class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                    Filter
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Tabel Data -->
-                    <div class="p-6">
+                    <!-- Data Table -->
+                    <div class="p-6 bg-white">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">
+                            Data Laporan Ketidakhadiran Guru
+                        </h3>
+
+                        <!-- Tabel Data -->
                         <div v-if="absensiGuru.data.length > 0" class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -273,7 +272,7 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 import Pagination from '@/Components/Pagination.vue'
 
@@ -300,16 +299,18 @@ const bulanOptions = {
     '9': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
 }
 
-const tahunOptions = [
-    new Date().getFullYear(),
-    new Date().getFullYear() - 1,
-    new Date().getFullYear() - 2
-]
+const tahunOptions = computed(() => {
+    const currentYear = new Date().getFullYear()
+    const years = []
+    for (let i = currentYear; i >= currentYear - 5; i--) {
+        years.push(i)
+    }
+    return years
+})
 
 const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('id-ID', {
-        weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -329,8 +330,8 @@ const getJenisText = (jenis) => {
 const getJenisBadgeClass = (jenis) => {
     const classMap = {
         'sakit': 'bg-red-100 text-red-800',
-        'izin': 'bg-blue-100 text-blue-800',
-        'dinas': 'bg-purple-100 text-purple-800',
+        'izin': 'bg-yellow-100 text-yellow-800',
+        'dinas': 'bg-blue-100 text-blue-800',
         'cuti': 'bg-green-100 text-green-800'
     }
     return classMap[jenis] || 'bg-gray-100 text-gray-800'
@@ -338,7 +339,7 @@ const getJenisBadgeClass = (jenis) => {
 
 const getStatusLaporanText = (status) => {
     const statusMap = {
-        'dilaporkan': 'Telah Dilaporkan',
+        'dilaporkan': 'Dilaporkan',
         'diterima': 'Diterima'
     }
     return statusMap[status] || status
@@ -346,17 +347,17 @@ const getStatusLaporanText = (status) => {
 
 const getStatusLaporanBadgeClass = (status) => {
     const classMap = {
-        'dilaporkan': 'bg-blue-100 text-blue-800',
+        'dilaporkan': 'bg-yellow-100 text-yellow-800',
         'diterima': 'bg-green-100 text-green-800'
     }
     return classMap[status] || 'bg-gray-100 text-gray-800'
 }
 
-const applyFilters = () => {
+const applyFilter = () => {
     router.get(route('absensi-guru.monitoring'), filterForm)
 }
 
-const resetFilters = () => {
+const resetFilter = () => {
     Object.keys(filterForm).forEach(key => {
         filterForm[key] = ''
     })

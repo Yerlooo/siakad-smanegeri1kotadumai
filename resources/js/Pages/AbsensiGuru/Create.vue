@@ -52,7 +52,7 @@
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     :class="{ 'border-red-500': errors.jenis_ketidakhadiran }"
                                 >
-                                    <option value="">Pilih Jenis Ketidakhadiran</option>
+                                    <option value="">-- Pilih Jenis Ketidakhadiran --</option>
                                     <option value="sakit">Sakit</option>
                                     <option value="izin">Izin</option>
                                     <option value="dinas">Dinas Luar Kota</option>
@@ -121,9 +121,8 @@
                                         <div class="mt-2 text-sm text-blue-700">
                                             <ul class="list-disc pl-5 space-y-1">
                                                 <li>Laporan akan tercatat dan dapat dilihat oleh kepala sekolah</li>
-                                                <li>Status laporan dapat dilihat di halaman riwayat</li>
-                                                <li>Laporan hanya dapat diubah selama status masih "Dilaporkan"</li>
-                                                <li>Satu tanggal hanya dapat dilaporkan satu kali</li>
+                                                <li>Pastikan data yang dimasukkan sudah benar</li>
+                                                <li>Laporan dapat diedit selama belum diterima</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -141,8 +140,8 @@
                                     :disabled="processing"
                                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
                                 >
-                                    <span v-if="processing">Menyimpan...</span>
-                                    <span v-else>Laporkan Ketidakhadiran</span>
+                                    <span v-if="processing">Mengirim...</span>
+                                    <span v-else>Kirim Laporan</span>
                                 </button>
                             </div>
                         </form>

@@ -87,7 +87,7 @@ class AbsensiGuruController extends Controller
         }
 
         return Inertia::render('AbsensiGuru/Show', [
-            'absensiGuru' => $absensiGuru->load('user')
+            'absensiGuru' => $absensiGuru->load(['user', 'penerima'])
         ]);
     }
 
@@ -187,7 +187,7 @@ class AbsensiGuruController extends Controller
      */
     public function monitoring(Request $request)
     {
-        $query = AbsensiGuru::with('user');
+        $query = AbsensiGuru::with(['user', 'penerima']);
 
         // Filter berdasarkan status laporan
         if ($request->status_laporan) {
